@@ -8,7 +8,9 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:ui": "node ui/build.mjs",
+    "build": "npm run build:ui"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^2.0.3",
@@ -25,6 +27,8 @@
     "@types/node": "^20.19.0",
     "@types/express": "^5.0.3",
     "@types/cors": "^2.8.19",
-    "@modelcontextprotocol/client": "2.3.1"
+    "@modelcontextprotocol/client": "2.3.1",
+    "vite": "^7.1.0",
+    "vite-plugin-singlefile": "^2.3.0"
   }
 }

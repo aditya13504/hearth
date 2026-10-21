@@ -1,0 +1,52 @@
+{
+  "title": "Hearth on Countertop",
+  "subtitle": "Alexa+-style simulation of the Hearth MCP add-on",
+  "skills": ["../../skills/hearth-care/SKILL.md"],
+  "voice": { "preferred": ["Ava Online (Natural)", "Aria Online (Natural)", "Jenny Online (Natural)", "Natural", "Google US English", "Samantha"] },
+  "demo": {
+    "url": "http://localhost:8787/demo",
+    "presets": [
+      { "label": "7:55 AM", "time": "07:55" },
+      { "label": "8:00 AM", "time": "08:00" },
+      { "label": "9:05 AM", "time": "09:05" },
+      { "label": "6:00 PM", "time": "18:00" },
+      { "label": "9:00 PM", "time": "21:00" }
+    ]
+  },
+  "devices": [
+    {
+      "id": "june",
+      "label": "June's kitchen display",
+      "variant": "display",
+      "owner": "June",
+      "mcpUrl": "http://localhost:8787/mcp",
+      "token": "june-kitchen-echo",
+      "idleTitle": "Good to see you, June",
+      "suggestions": [
+        "What do I need to take now?",
+        "I just took my blood pressure pill",
+        "What is the white oval one for?",
+        "Did I already take my metformin?",
+        "I'm almost out of metformin, can you order more?",
+        "I'm feeling a bit dizzy this morning",
+        "Tell Maya I love the photos she sent"
+      ]
+    },
+    {
+      "id": "maya",
+      "label": "Maya's phone",
+      "variant": "phone",
+      "owner": "Maya",
+      "mcpUrl": "http://localhost:8787/mcp",
+      "token": "maya-phone",
+      "idleTitle": "Hearth",
+      "suggestions": [
+        "How's Mom doing this week?",
+        "Did Mom take her morning pills?",
+        "Anything I need to deal with?",
+        "Let Mom know I'll call her at 6",
+        "Order her metformin refill"
+      ]
+    }
+  ]
+}

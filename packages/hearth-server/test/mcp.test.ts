@@ -68,6 +68,18 @@ describe('Hearth over Streamable HTTP', () => {
     await maya.close();
   });
 
+  it('logs every due dose for "my morning pills"', async () => {
+    hearth.clock.setTimeOfDay('08:10');
+    const june = await connect('june-kitchen-echo');
+    await june.callTool({ name: 'log_dose', arguments: { medication: 'lisinopril' } }); // may already be taken; either way it is taken now
+    const res = structured(await june.callTool({ name: 'log_dose', arguments: { medication: 'my morning pills' } }));
+    // Only doses still open are logged — the Lisinopril already taken is never logged twice.
+    expect(res.results.map((r: any) => r.medication)).toEqual(['Metformin']);
+    expect(res.results[0].logged).toBe(true);
+    hearth.clock.setTimeOfDay('07:50');
+    await june.close();
+  });
+
   it('pushes notifications/resources/updated to a subscribed caregiver when June reports a fall', async () => {
     const maya = await connect('maya-phone');
     const updated = new Promise<string>((resolve) => maya.setNotificationHandler('notifications/resources/updated', (n) => resolve(n.params.uri)));

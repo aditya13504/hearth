@@ -152,29 +152,58 @@ export function createHearthServer(deps: HearthDeps, id: SessionIdentity) {
         status: z.string().optional(),
         pillsLeft: z.number().optional(),
         alreadyTakenAt: z.string().optional(),
+        results: z
+          .array(
+            z.object({
+              logged: z.boolean(),
+              medication: z.string(),
+              slot: z.string().optional(),
+              status: z.string().optional(),
+              pillsLeft: z.number().optional(),
+              alreadyTakenAt: z.string().optional(),
+            }),
+          )
+          .optional()
+          .describe('Present when several doses were logged at once'),
       }),
     },
     async ({ medication, status, slot, note }) => {
-      const r = resolveMed(medication);
-      if ('error' in r) return fail(r.error);
-      const res = care.logDose(household(), me(), r.med, status, slot, note);
-      if (!res.ok && res.reason === 'already_logged') {
-        const at = new Date(res.event.at);
-        const when = speakTime(`${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`);
-        const who = household().members.find((m) => m.id === res.event.by)?.name ?? 'someone';
+      const logOne = (med: Medication) => {
+        const res = care.logDose(household(), me(), med, status, slot, note);
+        if (!res.ok && res.reason === 'already_logged') {
+          const at = new Date(res.event.at);
+          const when = speakTime(`${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`);
+          const who = household().members.find((m) => m.id === res.event.by)?.name ?? 'someone';
+          return {
+            line: `Not logged: the ${speakTime(res.event.slot)} ${med.name} was already taken at ${when} (logged by ${who}). Do not take another.`,
+            data: { logged: false, medication: med.name, slot: res.event.slot, alreadyTakenAt: res.event.at },
+          };
+        }
+        if (!res.ok) return { line: `There is no dose of ${med.name} left to log today.`, data: { logged: false, medication: med.name } };
+        const low = res.pillsLeft <= med.pillsPerDose * med.times.length * 7;
         return {
-          content: text(`Not logged: the ${speakTime(res.event.slot)} ${r.med.name} was already taken at ${when} (logged by ${who}). Do not take another.`),
-          structuredContent: { logged: false, medication: r.med.name, slot: res.event.slot, alreadyTakenAt: res.event.at },
+          line: `Logged ${med.name} ${status} for the ${speakTime(res.event.slot)} dose.` + (low && status === 'taken' ? ` Only ${res.pillsLeft} left — consider a refill.` : ''),
+          data: { logged: true, medication: med.name, slot: res.event.slot, status, pillsLeft: res.pillsLeft },
+        };
+      };
+
+      const r = resolveMed(medication);
+      if ('med' in r) {
+        const one = logOne(r.med);
+        return { content: text(one.line), structuredContent: one.data };
+      }
+      // "I took my morning pills" / "I took everything": log every dose that is due or overdue right now.
+      if (/\b(all|everything|morning|evening|night|bedtime|pills|medicines|medications|meds|them)\b/i.test(medication)) {
+        const open = care.schedule(household()).filter((e) => e.state === 'due' || e.state === 'missed');
+        if (open.length === 0) return fail('Nothing is due right now, so nothing was logged.');
+        const meds = [...new Set(open.map((e) => e.medId))].map((id) => household().meds.find((m) => m.id === id)!);
+        const results = meds.map(logOne);
+        return {
+          content: text(results.map((x) => x.line).join(' ')),
+          structuredContent: { logged: results.some((x) => x.data.logged), results: results.map((x) => x.data) },
         };
       }
-      if (!res.ok) return fail(`There is no dose of ${r.med.name} left to log today.`);
-      const low = res.pillsLeft <= r.med.pillsPerDose * r.med.times.length * 7;
-      return {
-        content: text(
-          `Logged ${r.med.name} ${status} for the ${speakTime(res.event.slot)} dose.` + (low && status === 'taken' ? ` Only ${res.pillsLeft} left — consider a refill.` : ''),
-        ),
-        structuredContent: { logged: true, medication: r.med.name, slot: res.event.slot, status, pillsLeft: res.pillsLeft },
-      };
+      return fail(r.error);
     },
   );
 

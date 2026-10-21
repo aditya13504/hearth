@@ -1,0 +1,430 @@
+{
+  "version": 1,
+  "households": [
+    {
+      "id": "hh_alvarez",
+      "name": "Alvarez family",
+      "members": [
+        {
+          "id": "mem_june",
+          "name": "June",
+          "role": "recipient",
+          "relationship": "Mom"
+        },
+        {
+          "id": "mem_maya",
+          "name": "Maya",
+          "role": "caregiver",
+          "relationship": "daughter"
+        }
+      ],
+      "tokens": {
+        "june-kitchen-echo": "mem_june",
+        "maya-phone": "mem_maya"
+      },
+      "pharmacy": {
+        "name": "Corner Pharmacy (simulated)",
+        "deliveryNote": "delivered tomorrow by 2 PM"
+      },
+      "meds": [
+        {
+          "id": "med_lisinopril",
+          "name": "Lisinopril",
+          "rxcui": "29046",
+          "strength": "10 mg",
+          "form": "tablet",
+          "purpose": "blood pressure",
+          "looks": "small pink round tablet",
+          "instructions": "once every morning",
+          "times": [
+            "08:00"
+          ],
+          "pillsPerDose": 1,
+          "pillsOnHand": 22,
+          "refillsRemaining": 3,
+          "refillPrice": 4,
+          "refillQuantity": 30,
+          "active": true
+        },
+        {
+          "id": "med_metformin",
+          "name": "Metformin",
+          "rxcui": "6809",
+          "strength": "500 mg",
+          "form": "tablet",
+          "purpose": "blood sugar",
+          "looks": "large white oval tablet",
+          "instructions": "with breakfast and with dinner",
+          "times": [
+            "08:00",
+            "18:00"
+          ],
+          "pillsPerDose": 1,
+          "pillsOnHand": 9,
+          "refillsRemaining": 1,
+          "refillPrice": 4,
+          "refillQuantity": 60,
+          "active": true
+        },
+        {
+          "id": "med_atorvastatin",
+          "name": "Atorvastatin",
+          "rxcui": "83367",
+          "strength": "20 mg",
+          "form": "tablet",
+          "purpose": "cholesterol",
+          "looks": "white oval tablet with \"20\" on it",
+          "instructions": "at bedtime",
+          "times": [
+            "21:00"
+          ],
+          "pillsPerDose": 1,
+          "pillsOnHand": 41,
+          "refillsRemaining": 5,
+          "refillPrice": 7.5,
+          "refillQuantity": 30,
+          "active": true
+        }
+      ],
+      "doses": [
+        {
+          "id": "dose_mvi6ab2yy",
+          "medId": "med_lisinopril",
+          "day": "2026-10-14",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-14T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2yz",
+          "medId": "med_metformin",
+          "day": "2026-10-14",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-14T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y10",
+          "medId": "med_metformin",
+          "day": "2026-10-14",
+          "slot": "18:00",
+          "status": "taken",
+          "at": "2026-10-14T12:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y11",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-14",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-14T15:30:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y12",
+          "medId": "med_lisinopril",
+          "day": "2026-10-15",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-15T02:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y13",
+          "medId": "med_metformin",
+          "day": "2026-10-15",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-15T02:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y14",
+          "medId": "med_metformin",
+          "day": "2026-10-15",
+          "slot": "18:00",
+          "status": "taken",
+          "at": "2026-10-15T12:30:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y15",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-15",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-15T15:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y16",
+          "medId": "med_lisinopril",
+          "day": "2026-10-16",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-16T02:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y17",
+          "medId": "med_metformin",
+          "day": "2026-10-16",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-16T02:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y18",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-16",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-16T15:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y19",
+          "medId": "med_lisinopril",
+          "day": "2026-10-17",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-17T02:30:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1a",
+          "medId": "med_metformin",
+          "day": "2026-10-17",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-17T02:30:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1b",
+          "medId": "med_metformin",
+          "day": "2026-10-17",
+          "slot": "18:00",
+          "status": "taken",
+          "at": "2026-10-17T12:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1c",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-17",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-17T15:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1d",
+          "medId": "med_lisinopril",
+          "day": "2026-10-18",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-18T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1e",
+          "medId": "med_metformin",
+          "day": "2026-10-18",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-18T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1f",
+          "medId": "med_metformin",
+          "day": "2026-10-18",
+          "slot": "18:00",
+          "status": "taken",
+          "at": "2026-10-18T12:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1g",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-18",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-18T15:30:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1h",
+          "medId": "med_lisinopril",
+          "day": "2026-10-19",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-19T02:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1i",
+          "medId": "med_metformin",
+          "day": "2026-10-19",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-19T02:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1j",
+          "medId": "med_lisinopril",
+          "day": "2026-10-20",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-20T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1k",
+          "medId": "med_metformin",
+          "day": "2026-10-20",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-20T02:36:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1l",
+          "medId": "med_metformin",
+          "day": "2026-10-20",
+          "slot": "18:00",
+          "status": "taken",
+          "at": "2026-10-20T12:48:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6ab2y1m",
+          "medId": "med_atorvastatin",
+          "day": "2026-10-20",
+          "slot": "21:00",
+          "status": "taken",
+          "at": "2026-10-20T15:42:00.000Z",
+          "by": "mem_june"
+        },
+        {
+          "id": "dose_mvi6bn5k1v",
+          "medId": "med_lisinopril",
+          "day": "2026-10-21",
+          "slot": "08:00",
+          "status": "taken",
+          "at": "2026-10-21T02:26:02.344Z",
+          "by": "mem_june"
+        }
+      ],
+      "checkins": [
+        {
+          "id": "chk_mvi6ab2y1n",
+          "at": "2026-10-14T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "good",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1o",
+          "at": "2026-10-15T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "good",
+          "note": "Walked to the mailbox and back.",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1p",
+          "at": "2026-10-16T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "okay",
+          "note": "Tired in the evening.",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1q",
+          "at": "2026-10-17T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "good",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1r",
+          "at": "2026-10-18T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "not_great",
+          "note": "Knee is sore today.",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1s",
+          "at": "2026-10-19T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "okay",
+          "note": "Slept badly.",
+          "flags": []
+        },
+        {
+          "id": "chk_mvi6ab2y1t",
+          "at": "2026-10-20T03:45:00.000Z",
+          "memberId": "mem_june",
+          "mood": "good",
+          "note": "Maya called, felt nice.",
+          "flags": []
+        }
+      ],
+      "inbox": [
+        {
+          "kind": "alert",
+          "severity": "info",
+          "title": "Metformin is running low",
+          "detail": "9 left — about 4 days. 2 refills remaining on the prescription.",
+          "key": "low|med_metformin|2026-10-21",
+          "to": "mem_maya",
+          "id": "inb_mvi6ae3h1u",
+          "at": "2026-10-21T02:25:03.949Z",
+          "readAt": "2026-10-21T02:31:38.445Z"
+        },
+        {
+          "to": "mem_june",
+          "kind": "reminder",
+          "severity": "info",
+          "title": "Time for your 8 AM medicine",
+          "detail": "It's time to take Metformin (large white oval tablet).",
+          "key": "reminder|2026-10-21|08:00",
+          "id": "inb_mvi6buly1w",
+          "at": "2026-10-21T02:30:00.000Z"
+        },
+        {
+          "to": "mem_maya",
+          "from": "mem_june",
+          "kind": "order",
+          "severity": "info",
+          "title": "Metformin refill ordered",
+          "detail": "June ordered 60 Metformin 500 mg from Corner Pharmacy (simulated), delivered tomorrow by 2 PM. $4.00.",
+          "id": "inb_mvi6dykj1y",
+          "at": "2026-10-21T02:31:38.445Z"
+        }
+      ],
+      "orders": [
+        {
+          "id": "ord_mvi6cpr81x",
+          "medId": "med_metformin",
+          "quantity": 60,
+          "price": 4,
+          "pharmacy": "Corner Pharmacy (simulated)",
+          "status": "placed",
+          "createdAt": "2026-10-21T02:30:40.366Z",
+          "requestedBy": "mem_june",
+          "placedAt": "2026-10-21T02:31:38.445Z",
+          "eta": "2026-10-22"
+        }
+      ]
+    }
+  ]
+}
