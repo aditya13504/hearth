@@ -19,3 +19,12 @@ export function unbackedClaim(reply: string, toolCallsThisTurn: number): boolean
   if (toolCallsThisTurn > 0) return false;
   return CLAIMED.test(reply) || ANNOUNCED.test(reply) || MENTIONS_SCREEN.test(reply);
 }
+
+/**
+ * Models sometimes narrate instead of speaking: `I'd announce: "Good morning, June…"`.
+ * Keep only the words meant for the listener.
+ */
+export function speakable(reply: string): string {
+  const m = reply.match(/^\s*(?:I'?d|I would|I will|I'll)\s+(?:say|announce|tell \w+|respond|reply)[^:"“]*:\s*["“](.+)["”]\s*$/is);
+  return (m ? m[1] : reply).trim();
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { unbackedClaim } from '../src/guard';
+import { speakable, unbackedClaim } from '../src/guard';
 
 describe('unbackedClaim', () => {
   it.each([
@@ -19,5 +19,15 @@ describe('unbackedClaim', () => {
     ['The summary is on the screen.', 1],
   ])('lets "%s" through', (reply, calls) => {
     expect(unbackedClaim(reply, calls)).toBe(false);
+  });
+});
+
+describe('speakable', () => {
+  it('strips narration around the words to say', () => {
+    expect(speakable(`I'd announce the reminder: "Good morning, June! It's 8 AM."`)).toBe("Good morning, June! It's 8 AM.");
+    expect(speakable('I would say: “Time for your Metformin.”')).toBe('Time for your Metformin.');
+  });
+  it('leaves normal replies alone', () => {
+    expect(speakable('Good morning, June! Time for your Lisinopril.')).toBe('Good morning, June! Time for your Lisinopril.');
   });
 });

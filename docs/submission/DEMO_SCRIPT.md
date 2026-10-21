@@ -38,7 +38,7 @@ technology (the MCP server) impossible to miss.
 | 1:45–2:10 | June: type or say **"I fell getting out of my chair this morning but I'm okay"**. Watch Maya's phone chime and announce it. | "When June mentions a fall, Hearth logs it and alerts Maya right away. Her phone speaks up without being asked." |
 | 2:10–2:20 | Maya: click **"Let Mom know I'll call her at 6"**. June's display reads it out. | "Maya can reply by voice, and June hears it in her kitchen." |
 | 2:20–2:40 | Maya: click **"How's Mom doing this week?"** Scroll the summary card on her phone a little. | "And when Maya asks how Mom's doing, she gets the week: adherence, missed doses, mood from June's check-ins, and refills to act on, all from shared context across both people and both devices." |
-| 2:40–2:55 | Expand one row in the MCP traffic panel (click **elicitation/create** or **notifications/resources/updated**) to show the JSON. | "Under the hood: 12 tools with output schemas, subscribable resources, prompts, elicitation, three MCP Apps, an Agent Skill, NIH RxNorm for misheard drug names, and 38 automated tests. Countertop is MIT-licensed for any MCP developer." |
+| 2:40–2:55 | Expand one row in the MCP traffic panel (click **elicitation/create** or **notifications/resources/updated**) to show the JSON. | "Under the hood: 12 tools with output schemas, subscribable resources, prompts, elicitation, three MCP Apps, an Agent Skill, NIH RxNorm for misheard drug names, and 40 automated tests. Countertop is MIT-licensed for any MCP developer." |
 | 2:55–3:00 | Back to the full view. | "Hearth. Care from anywhere." |
 
 ## Optional extra (only if you're under time)

@@ -1,6 +1,6 @@
 import type { CallToolResult, Client, Tool } from '@modelcontextprotocol/client';
 import { mountCard, uiResourceUri, type MountedCard } from './apphost';
-import { unbackedClaim } from './guard';
+import { speakable, unbackedClaim } from './guard';
 import { escapeHtml } from './inspector';
 import { chat, toFunctions } from './llm';
 import { connectDevice } from './mcp';
@@ -217,7 +217,7 @@ export class Device {
         const calls = msg.tool_calls ?? [];
         toolCallsThisTurn += calls.length;
         if (calls.length === 0) {
-          const reply = (msg.content ?? '').trim();
+          const reply = speakable(msg.content ?? '');
           // Guardrail: the assistant may not claim an action it never took. Send it back once to do it for real.
           if (!challenged && unbackedClaim(reply, toolCallsThisTurn)) {
             challenged = true;
@@ -411,7 +411,7 @@ export class Device {
     const lines = fresh.map((i) => `- (${i.kind ?? 'notice'}, ${i.severity ?? 'info'}) ${i.title}: ${i.detail}`).join('\n');
     void this.turn(
       `[Device notification — this was not said by ${this.cfg.owner}. It just arrived on the device.]\n${lines}\n` +
-        `Announce it to ${this.cfg.owner} now in one or two short spoken sentences and offer the most helpful next step. ` +
+        `Your reply is spoken aloud to ${this.cfg.owner} right now: talk to them directly in one or two short sentences and offer the most helpful next step. Output only the words to say — no preamble like "I would say". ` +
         `Don't call check_inbox for these.`,
       'notification',
     );
