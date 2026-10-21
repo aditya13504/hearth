@@ -515,6 +515,7 @@ export class Device {
     void this.turn(
       `[Device notification — this was not said by ${this.cfg.owner}. It just arrived on the device.]\n${lines}\n` +
         `Your reply is spoken aloud to ${this.cfg.owner} right now: talk to them directly in one or two short sentences and offer the most helpful next step. Output only the words to say — no preamble like "I would say". ` +
+        `You are the assistant, not ${this.cfg.owner} and not the sender: read a family message out to ${this.cfg.owner} (for example "Maya says she'll call you at 6"), never reply to it as if you were ${this.cfg.owner}. ` +
         `Don't call check_inbox for these.`,
       'notification',
     );

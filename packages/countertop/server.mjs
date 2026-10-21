@@ -134,7 +134,18 @@ function retryAfterMs(text) {
   return /per ?day|PerDay/i.test(text) ? 3_600_000 : 20_000;
 }
 
-app.post('/api/llm', async (req, res) => {
+/**
+ * One model call at a time. When two devices react to the same event (a reminder, an alert), their calls
+ * would otherwise land together and blow through free-tier tokens-per-minute limits; queued, the second
+ * one waits a fraction of a second instead.
+ */
+let llmQueue = Promise.resolve();
+app.post('/api/llm', (req, res, next) => {
+  const run = llmQueue.then(() => handleLlm(req, res).catch(next));
+  llmQueue = run.catch(() => undefined);
+});
+
+async function handleLlm(req, res) {
   if (routes.length === 0) return res.status(500).json({ error: 'No LLM configured. Set GROQ_API_KEY or LLM_API_KEY in .env (see README).' });
   const { messages, tools } = req.body ?? {};
   let last = null;
@@ -158,13 +169,13 @@ app.post('/api/llm', async (req, res) => {
       else return res.status(upstream.status).type('application/json').send(text); // our request's fault; another model won't fix it
     }
     const soonest = Math.min(...routes.map((r) => cooldownUntil.get(r) ?? 0)) - Date.now();
-    if (pass === 0 && soonest > 0 && soonest <= 30_000) {
+    if (pass === 0 && soonest > 0 && soonest <= 45_000) {
       console.warn(`[countertop] all models rate-limited; waiting ${Math.ceil(soonest / 1000)}s`);
       await new Promise((r) => setTimeout(r, soonest + 100));
     } else break;
   }
   res.status(last?.status ?? 503).type('application/json').send(last?.text ?? JSON.stringify({ error: 'All models are busy right now.' }));
-});
+}
 
 const port = Number(process.env.COUNTERTOP_PORT ?? 5173);
 const httpServer = createHttpServer(app);
