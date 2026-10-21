@@ -66,6 +66,8 @@ available for this project, so I did not enter the AWS Builder mini challenge.
     `ui/initialize` as soon as its script runs. If you wait for the iframe's `load` event, the handshake is lost.
     Connect first, then set `srcdoc`.
   - Single-file views come to about 400 KB each with `app-with-deps`; a slimmer runtime would help screen devices.
+- **Onboarding:** about 45 minutes to a first card, plus another hour for the host side, because the AppBridge has no
+  end-to-end host example.
 - **Would I build with it again?** Yes. Cards on a kitchen display are a real UX upgrade for voice.
 
 ## Agent Skills (`SKILL.md`)
@@ -75,6 +77,9 @@ available for this project, so I did not enter the AWS Builder mini challenge.
   workflows) out of code.
 - **Needs work:** guidance on how a skill and a server's `instructions` should divide responsibility, since both
   reach the model.
+- **Onboarding:** minutes. It's a markdown file with a short front-matter header.
+- **Would I build with it again?** Yes. It made the assistant's behaviour easy to review and change without touching
+  code.
 
 ## openFDA drug label API
 
@@ -84,6 +89,8 @@ available for this project, so I did not enter the AWS Builder mini challenge.
 - **Needs work:** a generic-name search returns combination products (for example lisinopril and
   hydrochlorothiazide) alongside single-ingredient labels, so clients must filter. The section text includes headings
   and cross-references (`[see Warnings (5.1)]`) that must be stripped before it can be spoken.
+- **Onboarding:** about 15 minutes to the first useful query, with no sign-up.
+- **Would I build with it again?** Yes. Authoritative, attributable medication facts are essential for a care product.
 
 ## NIH RxNav / RxNorm
 
@@ -92,12 +99,18 @@ available for this project, so I did not enter the AWS Builder mini challenge.
   is reliable.
 - **Needs work:** multi-word mis-hearings ("met for men") match brand combinations (Actoplus Met). I had to also
   query a joined-up spelling of the words and rank candidates by spelling distance.
+- **Onboarding:** about 20 minutes, with no key needed. Mapping a candidate to its ingredient took some reading of the
+  term types.
+- **Would I build with it again?** Yes. It is the right tool for checking medication names said out loud.
 
 ## Web Speech API (Edge and Chrome)
 
 - **Used for:** push-to-talk recognition and spoken replies in Countertop.
 - **Worked well:** zero setup, and Edge's natural voices sound good.
 - **Needs work:** it is not available in Firefox, and recognition needs a network connection.
+- **Onboarding:** minutes.
+- **Would I build with it again?** Yes, for prototypes and simulators. A real device would use Alexa's own speech
+  stack.
 
 ## LLM providers (Groq, Google Gemini via OpenAI-compatible endpoints)
 
@@ -109,8 +122,30 @@ available for this project, so I did not enter the AWS Builder mini challenge.
   - Gemini 3 thought signatures must be echoed back, which breaks conversations that switch providers. Google's
     documented placeholder signature fixes it.
   - Groq's free tier is 8,000 tokens per minute per model, so prompts had to be trimmed and requests rotated.
+- **Onboarding:** about 10 minutes each, using OpenAI-compatible endpoints. Discovering the free-tier limits took
+  longer than the integration.
+- **Would I build with them again?** Yes. Groq for speed in voice turns, and Gemini as a capable fallback.
+
+## Express, zod, Vite and Vitest
+
+- **Used for:**
+  - Express: the HTTP layer for the MCP server and the simulator's small server.
+  - zod v4: tool input and output schemas.
+  - Vite: the simulator and the single-file MCP Apps views, via `vite-plugin-singlefile`.
+  - Vitest: 49 tests, including end-to-end MCP tests.
+- **What worked well:** zod v4 schemas plug straight into the MCP SDK's `registerTool`. Vite's middleware mode lets
+  one Node server host the app, the API and live reload.
+- **What needs work:** Vite's live-reload websocket defaults to a fixed port (24678), which collides when two dev
+  servers run. Attaching it to the app's own HTTP server fixed that.
+- **Onboarding:** familiar tools, so minutes.
+- **Would I build with them again?** Yes.
 
 ## Claude Code
 
 - **Used for:** building the project (design, implementation, tests, browser-driven end-to-end checks, docs).
-- **Would use again:** yes.
+- **What worked well:** it drove the real app in a browser to find layout and safety bugs that unit tests alone would
+  have missed.
+- **What needs work:** long tasks needed explicit checks, which I gave as tests and screenshots, before I could
+  trust "done".
+- **Onboarding:** immediate.
+- **Would I build with it again?** Yes.
