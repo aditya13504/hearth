@@ -87,7 +87,7 @@ cross-person memory is what makes it a care product rather than a pill timer.
   - voice in and out, on-device elicitation, and proactive notifications
   - a live **protocol inspector**
   - any OpenAI-compatible LLM, with failover across free tiers
-- **Tests.** 29 tests, including end-to-end protocol tests with a real MCP client:
+- **Tests.** 38 automated tests, including end-to-end protocol tests with a real MCP client and tests for the guardrail against claimed actions:
   - version negotiation and auth
   - double-dose protection across two people
   - push notifications

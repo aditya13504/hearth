@@ -1,5 +1,6 @@
 import type { CallToolResult, Client, Tool } from '@modelcontextprotocol/client';
 import { mountCard, uiResourceUri, type MountedCard } from './apphost';
+import { unbackedClaim } from './guard';
 import { escapeHtml } from './inspector';
 import { chat, toFunctions } from './llm';
 import { connectDevice } from './mcp';
@@ -10,9 +11,6 @@ type ElicitContent = Record<string, string | number | boolean | string[]>;
 
 const MAX_TOOL_ROUNDS = 6;
 const YES = /\b(yes|yeah|yep|sure|ok(ay)?|please do|go ahead|do it|place it|confirm|correct|that'?s right)\b/i;
-/** Replies that say an action was performed: "I've noted…", "I logged…", "I let Maya know…". */
-const CLAIMS_ACTION =
-  /\bI(?:'ve| have|'ll| will)?\s+(?:just\s+|already\s+)?(?:noted|logged|recorded|saved|told|let \w+ know|alerted|notified|ordered|placed|sent|messaged|added|marked|checked you in)\b/i;
 const NO = /\b(no|nope|don'?t|do not|cancel|stop|never ?mind|not now|wait)\b/i;
 
 interface PendingElicitation {
@@ -221,7 +219,7 @@ export class Device {
         if (calls.length === 0) {
           const reply = (msg.content ?? '').trim();
           // Guardrail: the assistant may not claim an action it never took. Send it back once to do it for real.
-          if (!challenged && toolCallsThisTurn === 0 && CLAIMS_ACTION.test(reply)) {
+          if (!challenged && unbackedClaim(reply, toolCallsThisTurn)) {
             challenged = true;
             this.history.push({
               role: 'user',

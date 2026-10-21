@@ -104,8 +104,11 @@ Then ask *"How's Mom doing this week?"*
 npm test
 ```
 
+38 automated tests:
+
 - **Unit tests** cover the care engine: fuzzy medication matching, double-dose protection, scheduling,
   missed-dose escalation, adherence, refills, and red-flag check-ins.
+- **Countertop guardrail tests** check that replies claiming or announcing an action with no tool call are held back.
 - **End-to-end protocol tests** run a real MCP client over Streamable HTTP and check:
   - that the client and server agree on protocol 2025-11-25
   - that unknown device tokens are rejected
