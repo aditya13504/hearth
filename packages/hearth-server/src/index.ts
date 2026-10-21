@@ -124,6 +124,14 @@ export function startHearth(opts: HearthOptions = {}) {
   care.tick();
 
   const httpServer = app.listen(port, () => console.log(`[hearth] MCP server on http://localhost:${port}/mcp  (demo controls: ${demo ? 'on' : 'off'})`));
+  httpServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code !== 'EADDRINUSE' || process.env.VITEST) throw err;
+    console.error(
+      `[hearth] Port ${port} is already in use — another copy of Hearth (or "npm run dev") is probably still running.\n` +
+        `         Stop it with Ctrl+C in its terminal, or start this one on another port: PORT=8788 npm run dev -w hearth-server`,
+    );
+    process.exit(1);
+  });
 
   return {
     app,

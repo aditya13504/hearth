@@ -1,6 +1,7 @@
 // Countertop server: serves the simulator UI, its device config, and an LLM proxy so the
 // API key stays on the server. The MCP connections themselves are made by the browser.
 import express from 'express';
+import { createServer as createHttpServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -165,15 +166,28 @@ app.post('/api/llm', async (req, res) => {
   res.status(last?.status ?? 503).type('application/json').send(last?.text ?? JSON.stringify({ error: 'All models are busy right now.' }));
 });
 
+const port = Number(process.env.COUNTERTOP_PORT ?? 5173);
+const httpServer = createHttpServer(app);
+
 if (prod) {
   app.use(express.static(join(here, 'dist')));
 } else {
   const { createServer } = await import('vite');
-  const vite = await createServer({ root: here, server: { middlewareMode: true }, appType: 'spa' });
+  // Live reload rides on this same HTTP server, so there is no second fixed port (Vite's default 24678) to collide.
+  const vite = await createServer({ root: here, server: { middlewareMode: true, hmr: { server: httpServer } }, appType: 'spa' });
   app.use(vite.middlewares);
 }
 
-const port = Number(process.env.COUNTERTOP_PORT ?? 5173);
-app.listen(port, () => {
-  console.log(`[countertop] http://localhost:${port}  (config: ${configPath}, models: ${routes.map((r) => r.model).join(" → ") || "NONE — set GROQ_API_KEY or LLM_API_KEY"})`);
+httpServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `[countertop] Port ${port} is already in use — another copy of Countertop (or "npm run dev") is probably still running.\n` +
+        `             Stop it with Ctrl+C in its terminal, or start this one on another port: COUNTERTOP_PORT=5174 npm run dev`,
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+httpServer.listen(port, () => {
+  console.log(`[countertop] http://localhost:${port}  (config: ${configPath}, models: ${routes.map((r) => r.model).join(' → ') || 'NONE — set GROQ_API_KEY or LLM_API_KEY'})`);
 });
