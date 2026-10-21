@@ -132,7 +132,7 @@ available for this project, so I did not enter the AWS Builder mini challenge.
   - Express: the HTTP layer for the MCP server and the simulator's small server.
   - zod v4: tool input and output schemas.
   - Vite: the simulator and the single-file MCP Apps views, via `vite-plugin-singlefile`.
-  - Vitest: 49 tests, including end-to-end MCP tests.
+  - Vitest: 54 tests, including end-to-end MCP tests.
 - **What worked well:** zod v4 schemas plug straight into the MCP SDK's `registerTool`. Vite's middleware mode lets
   one Node server host the app, the API and live reload.
 - **What needs work:** Vite's live-reload websocket defaults to a fixed port (24678), which collides when two dev
