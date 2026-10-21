@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "build:ui": "node ui/build.mjs",
     "build": "npm run build:ui",
-    "dev:watch": "tsx watch src/index.ts"
+    "dev:watch": "tsx watch src/index.ts",
+    "setup": "tsx src/setup.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^2.0.3",

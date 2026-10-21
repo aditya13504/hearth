@@ -90,6 +90,31 @@ Open **http://localhost:5173** in **Edge or Chrome** (both support the Web Speec
 
 Device tokens for the demo household: `june-kitchen-echo` (June, care recipient) and `maya-phone` (Maya, caregiver).
 
+### Run Hearth for a real family (production mode)
+
+`npm run dev` runs the **demo**: a fictional household, a movable clock and the `/demo` controls. To run Hearth for
+real people, use production mode:
+
+```bash
+npm run setup -w hearth-server -- --household "Lee family" --recipient "Ruth:Mom" --caregiver "Sam:son"
+HEARTH_MODE=production npm start -w hearth-server
+```
+
+- **Setup** creates the household and prints a random 256-bit device token for each person, once. Only SHA-256 hashes
+  of the tokens are stored.
+- **Medicines** are added by voice or from a caregiver's device ("Add lisinopril 10 mg every morning at 8, it's for
+  blood pressure"). Each name is checked against RxNorm. Doses scheduled before a medicine was added never count as
+  missed.
+- **Production mode differences:** it uses the real clock and has no demo controls. It never regenerates or resets
+  data, and saves are atomic, so a crash can't leave half a file. It refuses to start without a household, and it
+  won't mix demo data with real data.
+- **Browser access:** pages may call the server only from localhost by default. Set `HEARTH_ALLOWED_ORIGINS` to allow
+  other origins.
+- **What is still simulated:**
+  - refill orders, until a pharmacy is connected
+  - the Alexa+ device itself, since the Alexa+ developer tools are partner-only, so Countertop or any MCP client
+    stands in
+
 ### Use Hearth from any MCP client
 
 Hearth is a standard MCP server, so it is not tied to Countertop. Any client that supports Streamable HTTP and a
@@ -108,11 +133,17 @@ Then ask *"How's Mom doing this week?"*
 npm test
 ```
 
-40 automated tests:
+49 automated tests:
 
 - **Unit tests** cover the care engine: fuzzy medication matching, double-dose protection, scheduling,
   missed-dose escalation, adherence, refills, and red-flag check-ins.
 - **Countertop guardrail tests** check that replies claiming or announcing an action with no tool call are held back.
+- **Production-mode tests** cover:
+  - setup stores only token hashes
+  - the family's tokens work and the demo tokens are rejected
+  - there are no demo controls
+  - real data is never regenerated
+  - untrusted browser origins are refused
 - **End-to-end protocol tests** run a real MCP client over Streamable HTTP and check:
   - that the client and server agree on protocol 2025-11-25
   - that unknown device tokens are rejected

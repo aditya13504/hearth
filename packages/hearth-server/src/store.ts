@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash, randomBytes } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { addDays, dateKey } from './clock.js';
 
@@ -31,6 +32,8 @@ export interface Medication {
   refillPrice: number;
   refillQuantity: number;
   active: boolean;
+  /** When the medication was added. Doses scheduled before this never count as due or missed. */
+  startsAt?: string;
 }
 
 export type DoseStatus = 'taken' | 'skipped';
@@ -91,7 +94,10 @@ export interface Household {
   id: string;
   name: string;
   members: Member[];
-  /** Bearer token -> member id. Demo-grade identity; a real add-on would use account linking. */
+  /**
+   * Device token -> member id. Real households store only SHA-256 hashes ("sha256:<hex>") of the tokens
+   * handed out by `npm run setup`; the demo household uses readable tokens.
+   */
   tokens: Record<string, string>;
   pharmacy: { name: string; deliveryNote: string };
   meds: Medication[];
@@ -103,10 +109,16 @@ export interface Household {
 
 export interface Db {
   version: 1;
-  /** Day the demo history was generated for; history is regenerated when this goes stale. */
-  seededOn: string;
+  /** 'demo' data is regenerated every day so the story always lines up; 'production' data is never touched. */
+  kind?: 'demo' | 'production';
+  /** Day the demo history was generated for. */
+  seededOn?: string;
   households: Household[];
 }
+
+export const hashToken = (token: string) => `sha256:${createHash('sha256').update(token).digest('hex')}`;
+/** A long random device token (256 bits), safe to put in a URL or header. */
+export const newToken = () => `hth_${randomBytes(32).toString('base64url')}`;
 
 let counter = 0;
 export function newId(prefix: string): string {
@@ -114,13 +126,42 @@ export function newId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${counter.toString(36)}`;
 }
 
+/** Write to a temporary file and rename it over the old one, so a crash can never leave half a file. */
+export function saveDb(file: string, db: Db): void {
+  mkdirSync(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  writeFileSync(tmp, JSON.stringify(db, null, 2));
+  renameSync(tmp, file);
+}
+
 export class Store {
   db: Db;
 
-  constructor(private readonly file: string | null, seedNow: Date) {
+  /**
+   * Demo mode: load the demo household, regenerating it when its history is from another day.
+   * Production mode: load real households exactly as saved, and refuse to start without them.
+   */
+  constructor(
+    private readonly file: string | null,
+    seedNow: Date,
+    readonly mode: 'demo' | 'production' = 'demo',
+  ) {
     const saved = file && existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Db) : null;
-    if (saved && saved.seededOn === dateKey(seedNow)) {
+    if (mode === 'production') {
+      if (!saved || saved.kind !== 'production') {
+        throw new Error(
+          saved
+            ? `${file} holds demo data. Production mode needs a real household: run "npm run setup -w hearth-server" with HEARTH_DATA pointing to a new file.`
+            : `No household data at ${file}. Create one first: npm run setup -w hearth-server -- --help`,
+        );
+      }
       this.db = saved;
+      return;
+    }
+    if (saved && saved.kind !== 'production' && saved.seededOn === dateKey(seedNow)) {
+      this.db = saved;
+    } else if (saved?.kind === 'production') {
+      throw new Error(`${file} holds real household data. Start Hearth with HEARTH_MODE=production, or point HEARTH_DATA at another file for the demo.`);
     } else {
       this.db = seed(seedNow);
       this.save();
@@ -128,14 +169,13 @@ export class Store {
   }
 
   reset(seedNow: Date): void {
+    if (this.mode === 'production') throw new Error('Refusing to reset real household data.');
     this.db = seed(seedNow);
     this.save();
   }
 
   save(): void {
-    if (!this.file) return;
-    mkdirSync(dirname(this.file), { recursive: true });
-    writeFileSync(this.file, JSON.stringify(this.db, null, 2));
+    if (this.file) saveDb(this.file, this.db);
   }
 
   household(id: string): Household {
@@ -146,8 +186,10 @@ export class Store {
 
   /** Resolve a bearer token to its household and member. */
   identify(token: string): { household: Household; member: Member } | null {
+    if (!token) return null;
+    const hashed = hashToken(token);
     for (const household of this.db.households) {
-      const memberId = household.tokens[token];
+      const memberId = household.tokens[hashed] ?? (this.mode === 'demo' ? household.tokens[token] : undefined);
       if (memberId) {
         const member = household.members.find((m) => m.id === memberId);
         if (member) return { household, member };
@@ -251,6 +293,7 @@ export function seed(now: Date): Db {
 
   return {
     version: 1,
+    kind: 'demo',
     seededOn: today,
     households: [
       {

@@ -124,14 +124,19 @@ export class CareService {
     return { candidates: scored.filter((x) => x.score === scored[0].score).map((x) => x.m) };
   }
 
-  addMedication(h: Household, med: Omit<Medication, 'id' | 'active'>): Medication {
-    const created: Medication = { ...med, id: newId('med'), active: true };
+  addMedication(h: Household, med: Omit<Medication, 'id' | 'active' | 'startsAt'>): Medication {
+    const created: Medication = { ...med, id: newId('med'), active: true, startsAt: this.now().toISOString() };
     h.meds.push(created);
     this.store.save();
     return created;
   }
 
   // ---------------------------------------------------------------- schedule & doses
+
+  /** Is this dose part of the regimen? Slots from before the medication was added are not. */
+  inEffect(med: Medication, day: string, slot: string): boolean {
+    return !med.startsAt || atSlot(day, slot).getTime() >= new Date(med.startsAt).getTime();
+  }
 
   slotState(h: Household, med: Medication, day: string, slot: string, now = this.now()): { state: SlotState; event?: DoseEvent } {
     const event = h.doses.find((d) => d.medId === med.id && d.day === day && d.slot === slot);
@@ -148,6 +153,7 @@ export class CareService {
     const entries: ScheduleEntry[] = [];
     for (const med of this.activeMeds(h)) {
       for (const slot of med.times) {
+        if (!this.inEffect(med, day, slot)) continue;
         const { state, event } = this.slotState(h, med, day, slot, now);
         entries.push({
           medId: med.id,
@@ -184,7 +190,7 @@ export class CareService {
     const day = dateKey(now);
     let chosen = slot;
     if (!chosen) {
-      const states = med.times.map((s) => ({ s, ...this.slotState(h, med, day, s, now) }));
+      const states = med.times.filter((s) => this.inEffect(med, day, s)).map((s) => ({ s, ...this.slotState(h, med, day, s, now) }));
       const open = states.filter((x) => !x.event);
       const pick =
         open.find((x) => x.state === 'due') ??
@@ -207,7 +213,9 @@ export class CareService {
     // A dose logged late resolves the open "missed" alert for that slot.
     for (const item of h.inbox) {
       if (!item.readAt && item.key === `missed|${day}|${chosen}`) {
-        const stillOpen = this.activeMeds(h).some((m) => m.times.includes(chosen!) && this.slotState(h, m, day, chosen!, now).state === 'missed');
+        const stillOpen = this.activeMeds(h).some(
+          (m) => m.times.includes(chosen!) && this.inEffect(m, day, chosen!) && this.slotState(h, m, day, chosen!, now).state === 'missed',
+        );
         if (!stillOpen) item.readAt = now.toISOString();
       }
     }
@@ -231,6 +239,7 @@ export class CareService {
       for (const med of this.activeMeds(h)) {
         const stats = perMed.get(med.id) ?? { medication: med.name, expected: 0, taken: 0 };
         for (const slot of med.times) {
+          if (!this.inEffect(med, day, slot)) continue;
           const { state } = this.slotState(h, med, day, slot, now);
           if (state === 'upcoming' || state === 'due') continue; // not judged yet
           expected++;
@@ -421,7 +430,7 @@ export class CareService {
       if (!recipient) continue;
       const slots = [...new Set(this.activeMeds(h).flatMap((m) => m.times))].sort();
       for (const slot of slots) {
-        const meds = this.activeMeds(h).filter((m) => m.times.includes(slot));
+        const meds = this.activeMeds(h).filter((m) => m.times.includes(slot) && this.inEffect(m, day, slot));
         const states = meds.map((m) => ({ m, state: this.slotState(h, m, day, slot, now).state }));
         const at = atSlot(day, slot).getTime();
         const open = states.filter((s) => s.state === 'due' || s.state === 'missed');

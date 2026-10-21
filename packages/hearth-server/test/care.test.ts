@@ -141,6 +141,33 @@ describe('check-ins', () => {
   });
 });
 
+describe('medications added during the day', () => {
+  const newMed = {
+    name: 'Donepezil',
+    strength: '5 mg',
+    form: 'tablet',
+    purpose: 'memory',
+    looks: 'white round tablet',
+    times: ['08:00', '21:00'],
+    pillsPerDose: 1,
+    pillsOnHand: 30,
+    refillsRemaining: 3,
+    refillPrice: 10,
+    refillQuantity: 30,
+  };
+
+  it('does not count doses scheduled before the medication was added', () => {
+    const { clock, care, h } = setup('19:30');
+    care.addMedication(h, newMed);
+    const entries = care.schedule(h).filter((e) => e.medication === 'Donepezil');
+    expect(entries.map((e) => e.slot)).toEqual(['21:00']); // the 8 AM dose today predates it
+    clock.setTimeOfDay('22:30');
+    care.tick();
+    expect(care.unread(h, 'mem_maya').some((i) => i.detail.includes('Donepezil') && i.key?.startsWith('missed'))).toBe(true); // 9 PM really was missed
+    expect(care.adherence(h, 1).missedDoses.filter((m) => m.medication === 'Donepezil').map((m) => m.slot)).toEqual(['21:00']);
+  });
+});
+
 describe('refills', () => {
   it('quotes, places, and suppresses the low-supply alert', () => {
     const { care, h, june } = setup('10:00');

@@ -22,7 +22,7 @@ async function connect(token: string, opts: { elicit?: 'yes' | 'no' } = {}) {
 const structured = (r: unknown) => (r as { structuredContent: Record<string, any> }).structuredContent;
 
 beforeAll(() => {
-  hearth = startHearth({ port: PORT, dataFile: null, demo: true, tickMs: 60_000 });
+  hearth = startHearth({ port: PORT, dataFile: null, mode: 'demo', tickMs: 60_000 });
   hearth.clock.setTimeOfDay('07:50');
 });
 afterAll(async () => {

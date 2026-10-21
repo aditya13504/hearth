@@ -18,18 +18,27 @@ const root = resolve(here, '..');
 export interface HearthOptions {
   port?: number;
   dataFile?: string | null;
-  demo?: boolean;
+  /** 'demo' (default): the fictional Alvarez household, a movable clock and /demo controls. 'production': real households only. */
+  mode?: 'demo' | 'production';
+  /** Origins allowed to call the server from a browser. Default: localhost on any port. */
+  allowedOrigins?: string[];
   tickMs?: number;
 }
 
+const envMode = (): 'demo' | 'production' =>
+  process.env.HEARTH_MODE === 'production' || process.env.HEARTH_DEMO === '0' ? 'production' : 'demo';
+
 export function startHearth(opts: HearthOptions = {}) {
   const port = opts.port ?? Number(process.env.PORT ?? 8787);
-  const demo = opts.demo ?? process.env.HEARTH_DEMO !== '0';
+  const mode = opts.mode ?? envMode();
+  const demo = mode === 'demo';
   const clock = new Clock();
   // The demo story starts just before the 8 AM medicines; set HEARTH_START_TIME=now to use real time.
   const start = process.env.HEARTH_START_TIME ?? '07:55';
   if (demo && start !== 'now') clock.setTimeOfDay(start);
-  const store = new Store(opts.dataFile === undefined ? join(root, 'data', 'hearth.json') : opts.dataFile, clock.now());
+  const dataFile =
+    opts.dataFile !== undefined ? opts.dataFile : resolve(process.env.HEARTH_DATA ?? join(root, 'data', demo ? 'hearth.json' : 'household.json'));
+  const store = new Store(dataFile, clock.now(), mode);
   const care = new CareService(store, clock);
   const deps = { care, rx: new RxNorm(join(root, 'cache')), fda: new OpenFda(join(root, 'cache')), uiDir: join(root, 'ui-dist') };
 
@@ -43,10 +52,27 @@ export function startHearth(opts: HearthOptions = {}) {
     }
   });
 
+  // Browsers may only call Hearth from trusted pages (Countertop on localhost by default). This blocks a
+  // random website from reaching a server running on someone's machine. Non-browser MCP clients send no Origin.
+  const allowed = opts.allowedOrigins ?? (process.env.HEARTH_ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+  const originAllowed = (origin?: string) => {
+    if (!origin) return true;
+    if (allowed.length) return allowed.includes(origin);
+    try {
+      return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+    } catch {
+      return false;
+    }
+  };
+
   const app = express();
+  app.use((req, res, next) => {
+    if (originAllowed(req.headers.origin)) return next();
+    res.status(403).json({ error: `Origin ${req.headers.origin} is not allowed. Set HEARTH_ALLOWED_ORIGINS to permit it.` });
+  });
   app.use(
     cors({
-      origin: true,
+      origin: (origin, cb) => cb(null, originAllowed(origin)),
       exposedHeaders: ['Mcp-Session-Id', 'Mcp-Protocol-Version'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Mcp-Session-Id', 'Mcp-Protocol-Version', 'Last-Event-ID', 'Accept'],
     }),
@@ -72,7 +98,7 @@ export function startHearth(opts: HearthOptions = {}) {
     const who = store.identify(token);
     if (!who) {
       res.setHeader('WWW-Authenticate', 'Bearer realm="hearth"');
-      return rpcError(res, 401, 'Unknown device token. Use one of the household device tokens (see README).');
+      return rpcError(res, 401, demo ? 'Unknown device token. Use one of the household device tokens (see README).' : 'Unknown device token.');
     }
     const hearth = createHearthServer(deps, { householdId: who.household.id, memberId: who.member.id });
     const transport: NodeStreamableHTTPServerTransport = new NodeStreamableHTTPServerTransport({
@@ -123,7 +149,13 @@ export function startHearth(opts: HearthOptions = {}) {
   const timer = setInterval(() => care.tick(), opts.tickMs ?? 5000);
   care.tick();
 
-  const httpServer = app.listen(port, () => console.log(`[hearth] MCP server on http://localhost:${port}/mcp  (demo controls: ${demo ? 'on' : 'off'})`));
+  const httpServer = app.listen(port, () =>
+    console.log(
+      demo
+        ? `[hearth] MCP server on http://localhost:${port}/mcp  (demo mode: fictional household, demo clock and /demo controls)`
+        : `[hearth] MCP server on http://localhost:${port}/mcp  (production mode: ${store.db.households.length} household(s) from ${dataFile})`,
+    ),
+  );
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code !== 'EADDRINUSE' || process.env.VITEST) throw err;
     console.error(
@@ -147,5 +179,10 @@ export function startHearth(opts: HearthOptions = {}) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  startHearth();
+  try {
+    startHearth();
+  } catch (err) {
+    console.error(`[hearth] ${(err as Error).message}`);
+    process.exit(1);
+  }
 }
