@@ -1,0 +1,1 @@
+{"url":"https://rxnav.nlm.nih.gov/REST/rxcui/25480/related.json?tty=IN+MIN","body":{"relatedGroup":{"rxcui":null,"conceptGroup":[{"tty":"IN","conceptProperties":[{"rxcui":"25480","name":"gabapentin","synonym":"","tty":"IN","language":"ENG","suppress":"N","umlscui":""}]},{"tty":"MIN"}]}}}
