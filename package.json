@@ -11,6 +11,10 @@
     "dev": "node scripts/dev.mjs",
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "voice": "node tools/record-voice.mjs"
+  },
+  "devDependencies": {
+    "ffmpeg-static": "^5.2.0"
   }
 }
