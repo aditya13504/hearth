@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Hearth cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* Title card, closing card and Devpost cover, in the same Amazon palette as the app.
+     Pick one with the URL hash: #title (1920x1080), #closing (1920x1080), #cover (1500x1000). */
+  html, body { margin: 0; }
+  body {
+    font-family: 'Figtree', 'Segoe UI', sans-serif;
+    color: #fff;
+    overflow: hidden;
+    background:
+      radial-gradient(1100px 520px at 86% -6%, rgba(240, 163, 94, 0.55), transparent 70%),
+      linear-gradient(100deg, #131921 0%, #232f3e 52%, #3e3f74 100%);
+  }
+  .card { display: none; position: relative; box-sizing: border-box; }
+  #title:target, #closing:target, #cover:target { display: block; }
+  .size-video { width: 1920px; height: 1080px; padding: 120px 140px; }
+  .size-cover { width: 1500px; height: 1000px; padding: 96px 100px; }
+  .brand { display: flex; align-items: center; gap: 18px; }
+  .brand svg { color: #ff9900; }
+  .brand b { font-size: 54px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand i { font-style: normal; color: #febd69; font-weight: 600; font-size: 26px; padding-top: 10px; }
+  h1 { font-size: 92px; line-height: 1.04; letter-spacing: -0.03em; font-weight: 800; margin: 64px 0 0; max-width: 15ch; }
+  .lede { margin-top: 28px; font-size: 32px; line-height: 1.45; color: #d5dde4; max-width: 46ch; }
+  .facts { position: absolute; left: 140px; bottom: 110px; display: flex; gap: 14px; flex-wrap: wrap; max-width: 1100px; }
+  .facts span { font-size: 24px; font-weight: 600; padding: 10px 20px; border-radius: 999px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); }
+  .facts span.buy { background: #ffd814; border-color: #fcd200; color: #0f1111; }
+  .orb { position: absolute; right: 230px; top: 170px; width: 120px; height: 120px; border-radius: 50%;
+         background: radial-gradient(circle at 35% 35%, #fff6c9, #ffd814 45%, #ff9900 100%);
+         box-shadow: 0 0 0 26px rgba(255,216,20,0.12), 0 0 120px 40px rgba(255,153,0,0.45); }
+  .arc { position: absolute; right: 80px; top: 230px; width: 760px; height: 300px; }
+  .arc path { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 3; stroke-dasharray: 6 9; }
+  .quote { position: absolute; right: 140px; width: 560px; border-radius: 28px; padding: 26px 30px; font-size: 27px; line-height: 1.35;
+           background: #fff; color: #0f1111; box-shadow: 0 30px 60px rgba(0,0,0,0.35); }
+  .quote small { display: block; font-size: 19px; font-weight: 700; color: #c45500; margin-bottom: 6px; }
+  .quote.alexa { background: #0f1b2a; color: #fff; border: 1px solid rgba(255,255,255,0.18); }
+  .quote.alexa small { color: #7fd6f0; }
+  .closing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 70px; max-width: 1500px; }
+  .closing-grid div { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16); border-radius: 22px; padding: 28px 32px; }
+  .closing-grid h2 { margin: 0 0 8px; font-size: 34px; }
+  .closing-grid p { margin: 0; font-size: 25px; line-height: 1.4; color: #d5dde4; }
+  .closing-grid code { color: #febd69; font-family: inherit; font-weight: 600; }
+  .sign { position: absolute; left: 140px; bottom: 110px; font-size: 40px; font-weight: 800; }
+  .sign span { color: #febd69; }
+  /* cover-specific sizing */
+  .size-cover h1 { font-size: 74px; margin-top: 48px; }
+  .size-cover .lede { font-size: 27px; }
+  .size-cover .facts { left: 100px; bottom: 84px; }
+  .size-cover .facts span { font-size: 20px; }
+  .size-cover .quote { right: 90px; width: 470px; font-size: 24px; }
+</style>
+</head>
+<body>
+  <section class="card size-video" id="title">
+    <div class="brand"><svg width="58" height="58" viewBox="0 0 24 24"><path d="M12 3.2 3.5 10v10.3h6.2v-5.6h4.6v5.6h6.2V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 8.6c1.4 1.5 2.1 2.6 2.1 3.6a2.1 2.1 0 0 1-4.2 0c0-1 .7-2.1 2.1-3.6Z" fill="currentColor"/></svg><b>Hearth</b><i>for Alexa+</i></div>
+    <h1>Care for Mom from anywhere, by voice.</h1>
+    <p class="lede">An Alexa+ add-on that keeps a family's care circle in step: medicine reminders, confirmed refills and check-ins, shared between Mom's kitchen and her daughter's phone.</p>
+    <svg class="arc" viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M0 40 Q50 -8 100 40" vector-effect="non-scaling-stroke"/></svg>
+    <span class="orb"></span>
+    <div class="facts"><span class="buy">Alexa+ track</span><span>MCP 2025-11-25</span><span>Streamable HTTP</span><span>MCP Apps</span><span>Elicitation</span><span>Agent Skill</span></div>
+  </section>
+
+  <section class="card size-video" id="closing">
+    <div class="brand"><svg width="58" height="58" viewBox="0 0 24 24"><path d="M12 3.2 3.5 10v10.3h6.2v-5.6h4.6v5.6h6.2V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 8.6c1.4 1.5 2.1 2.6 2.1 3.6a2.1 2.1 0 0 1-4.2 0c0-1 .7-2.1 2.1-3.6Z" fill="currentColor"/></svg><b>Hearth</b><i>for Alexa+</i></div>
+    <div class="closing-grid">
+      <div><h2>Hearth MCP server</h2><p>12 tools, subscribable resources, prompts, elicitation and 3 MCP Apps. Production mode for real families. <code>github.com/aditya13504/hearth</code></p></div>
+      <div><h2>Countertop simulator</h2><p>Open-source Alexa+-style simulator for any MCP server: voice, cards, confirmations and a live protocol log. <code>github.com/aditya13504/countertop</code></p></div>
+      <div><h2>Real data, safely</h2><p>NIH RxNorm for misheard drug names, openFDA labels quoted with sources, no dosing advice, nothing bought without a yes.</p></div>
+      <div><h2>Tested</h2><p>54 automated tests, including end-to-end protocol tests with a real MCP client.</p></div>
+    </div>
+    <p class="sign">Hearth. <span>Care from anywhere.</span></p>
+  </section>
+
+  <section class="card size-cover" id="cover">
+    <div class="brand"><svg width="50" height="50" viewBox="0 0 24 24"><path d="M12 3.2 3.5 10v10.3h6.2v-5.6h4.6v5.6h6.2V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 8.6c1.4 1.5 2.1 2.6 2.1 3.6a2.1 2.1 0 0 1-4.2 0c0-1 .7-2.1 2.1-3.6Z" fill="currentColor"/></svg><b>Hearth</b><i>for Alexa+</i></div>
+    <h1>Care for Mom from anywhere, by voice.</h1>
+    <p class="lede" style="max-width: 32ch">Medicine reminders, double-dose protection, confirmed refills and check-ins, over MCP.</p>
+    <div class="quote" style="top: 110px"><small>June, in her kitchen</small>“Did I take the pink one? I might take another.”</div>
+    <div class="quote alexa" style="top: 330px; right: 150px"><small>Hearth</small>“You already took it at 8:04, June, so don't take another one.”</div>
+    <div class="quote" style="top: 560px"><small>Maya, on her phone</small>“How's Mom doing this week?”</div>
+    <div class="facts"><span class="buy">Alexa+ track</span><span>MCP 2025-11-25</span><span>MCP Apps</span><span>Elicitation</span><span>openFDA · RxNorm</span></div>
+  </section>
+</body>
+</html>

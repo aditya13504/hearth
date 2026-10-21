@@ -296,7 +296,8 @@ export class Device {
         if (calls.length === 0) {
           const reply = speakable(msg.content ?? '');
           // Guardrail: the assistant may not claim an action it never took. Send it back once to do it for real.
-          if (!challenged && unbackedClaim(reply, toolCallsThisTurn)) {
+          // Announcements describe what the server already did ("the family has been alerted"), so they are exempt.
+          if (!challenged && source !== 'notification' && unbackedClaim(reply, toolCallsThisTurn)) {
             challenged = true;
             this.history.push({
               role: 'user',

@@ -445,7 +445,7 @@ export function createHearthServer(deps: HearthDeps, id: SessionIdentity) {
     {
       title: 'Daily check-in',
       description:
-        'Call this EVERY time the person says how they feel or mentions a health event (a fall, pain, dizziness, poor sleep) — it is the only way the family finds out. Record their own words as the note. Mentions of a fall, chest pain, dizziness, breathing trouble, confusion or bleeding — or a "bad" mood — automatically alert the family.',
+        'Call this EVERY time the person cared for says how they feel or mentions a health event, or a caregiver reports one on their behalf (a fall, pain, dizziness, poor sleep) — it is the only way the family finds out. Record their own words as the note. Mentions of a fall, chest pain, dizziness, breathing trouble, confusion or bleeding — or a "bad" mood — automatically alert the family.',
       inputSchema: z.object({
         mood: z.enum(['great', 'good', 'okay', 'not_great', 'bad']),
         note: z.string().optional().describe("The person's own words"),
@@ -454,12 +454,15 @@ export function createHearthServer(deps: HearthDeps, id: SessionIdentity) {
     },
     async ({ mood, note }) => {
       const { checkin, alerted } = care.checkin(household(), me(), mood, note);
-      const caregivers = household().members.filter((m) => m.role === 'caregiver').map((m) => m.name).join(' and ');
+      const others = household().members.filter((m) => m.role === 'caregiver' && m.id !== me().id).map((m) => m.name).join(' and ');
+      const emergency = checkin.flags.length ? ' If this is an emergency, call 911.' : '';
       return {
         content: text(
           alerted
-            ? `Check-in saved and ${caregivers} ${checkin.flags.length ? 'has been alerted' : 'will see it'}.${checkin.flags.length ? ' If this is an emergency, call 911.' : ''}`
-            : 'Check-in saved.',
+            ? `Check-in saved and ${others} ${checkin.flags.length ? 'has been alerted' : 'will see it'}.${emergency}`
+            : checkin.flags.length && me().role === 'recipient'
+              ? `Check-in saved. The family was already alerted about this recently.${emergency}`
+              : `Check-in saved.${emergency}`,
         ),
         structuredContent: { recorded: true, familyAlerted: alerted, flags: checkin.flags },
       };

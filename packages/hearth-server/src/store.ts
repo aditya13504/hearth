@@ -58,6 +58,8 @@ export interface Checkin {
   mood: Mood;
   note?: string;
   flags: string[];
+  /** Set when a caregiver reported this on the person's behalf ("Mom told me she fell"). */
+  reportedBy?: string;
 }
 
 export type InboxKind = 'reminder' | 'alert' | 'message' | 'order';

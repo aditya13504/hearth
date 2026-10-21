@@ -306,21 +306,44 @@ export class CareService {
 
   // ---------------------------------------------------------------- wellbeing
 
-  checkin(h: Household, member: Member, mood: Mood, note?: string): { checkin: Checkin; alerted: boolean } {
+  /**
+   * Record how the person being cared for is doing. A check-in is always about them: when a caregiver
+   * reports it ("Mom told me she fell"), it is recorded against the recipient and marked as reported.
+   * Red flags alert every other caregiver, at most once per flag every two hours.
+   */
+  checkin(h: Household, reporter: Member, mood: Mood, note?: string): { checkin: Checkin; alerted: boolean } {
     const now = this.now();
+    const subject = h.members.find((m) => m.role === 'recipient') ?? reporter;
     const flags = RED_FLAGS.filter(([re]) => re.test(note ?? '')).map(([, label]) => label);
-    const checkin: Checkin = { id: newId('chk'), at: now.toISOString(), memberId: member.id, mood, note, flags };
+    const checkin: Checkin = {
+      id: newId('chk'),
+      at: now.toISOString(),
+      memberId: subject.id,
+      mood,
+      note,
+      flags,
+      reportedBy: reporter.id !== subject.id ? reporter.id : undefined,
+    };
     h.checkins.push(checkin);
     let alerted = false;
     if (flags.length > 0 || mood === 'bad') {
-      this.notifyCaregivers(h, {
-        kind: 'alert',
-        severity: flags.length > 0 ? 'urgent' : 'warning',
-        title: flags.length > 0 ? `${member.name} mentioned ${flags.join(' and ')}` : `${member.name} is having a bad day`,
-        detail: note ? `${member.name} said: "${note}"` : `${member.name} reported feeling ${mood.replace('_', ' ')}.`,
-        from: member.id,
-      });
-      alerted = true;
+      const said = reporter.id === subject.id ? `${subject.name} said` : `${reporter.name} reported`;
+      const window = `${dateKey(now)}|${Math.floor(now.getHours() / 2)}`;
+      const sent = h.members
+        .filter((m) => m.role === 'caregiver' && m.id !== reporter.id)
+        .map((m) =>
+          this.push(h, {
+            to: m.id,
+            kind: 'alert',
+            severity: flags.length > 0 ? 'urgent' : 'warning',
+            title: flags.length > 0 ? `${subject.name} mentioned ${flags.join(' and ')}` : `${subject.name} is having a bad day`,
+            detail: note ? `${said}: "${note}"` : `${said} feeling ${mood.replace('_', ' ')}.`,
+            from: reporter.id,
+            key: `wellbeing|${window}|${flags.length ? [...flags].sort().join('+') : 'bad-day'}`,
+          }),
+        )
+        .filter(Boolean);
+      alerted = sent.length > 0;
     }
     this.store.save();
     this.events.emit('changed', h.id);

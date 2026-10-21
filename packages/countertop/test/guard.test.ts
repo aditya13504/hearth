@@ -31,3 +31,15 @@ describe('speakable', () => {
     expect(speakable('Good morning, June! Time for your Lisinopril.')).toBe('Good morning, June! Time for your Lisinopril.');
   });
 });
+
+describe('speakable collapses an exactly repeated reply', () => {
+  it.each([
+    ['Message sent to Mom.Message sent to Mom.', 'Message sent to Mom.'],
+    ['According to the FDA label, Metformin helps control blood sugar. According to the FDA label, Metformin helps control blood sugar.', 'According to the FDA label, Metformin helps control blood sugar.'],
+  ])('"%s"', (input, expected) => {
+    expect(speakable(input)).toBe(expected);
+  });
+  it('keeps replies that merely repeat a word', () => {
+    expect(speakable('Yes, yes, I logged it.')).toBe('Yes, yes, I logged it.');
+  });
+});

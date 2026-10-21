@@ -135,6 +135,24 @@ describe('check-ins', () => {
     expect(alert?.title).toContain('fall');
   });
 
+  it('records a caregiver’s report against the person cared for, and does not alert the reporter', () => {
+    const { care, h, maya } = setup('10:00');
+    const res = care.checkin(h, maya, 'okay', 'Mom fell getting out of her chair this morning');
+    expect(res.checkin.memberId).toBe('mem_june');
+    expect(res.checkin.reportedBy).toBe('mem_maya');
+    // Maya is the only caregiver and she is the one who reported it, so nobody else needs an alert.
+    expect(care.unread(h, 'mem_maya').some((i) => i.kind === 'alert')).toBe(false);
+  });
+
+  it('does not raise the same red flag twice within a couple of hours', () => {
+    const { clock, care, h, june } = setup('10:00');
+    care.checkin(h, june, 'okay', 'I fell in the kitchen');
+    clock.setTimeOfDay('10:20');
+    const again = care.checkin(h, june, 'okay', 'I told you, I fell earlier');
+    expect(again.alerted).toBe(false);
+    expect(care.unread(h, 'mem_maya').filter((i) => i.kind === 'alert' && i.title.includes('fall'))).toHaveLength(1);
+  });
+
   it('does not alert for a good day', () => {
     const { care, h, june } = setup('10:00');
     expect(care.checkin(h, june, 'good', 'Lovely walk this morning').alerted).toBe(false);

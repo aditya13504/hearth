@@ -26,5 +26,20 @@ export function unbackedClaim(reply: string, toolCallsThisTurn: number): boolean
  */
 export function speakable(reply: string): string {
   const m = reply.match(/^\s*(?:I'?d|I would|I will|I'll)\s+(?:say|announce|tell \w+|respond|reply)[^:"“]*:\s*["“](.+)["”]\s*$/is);
-  return (m ? m[1] : reply).trim();
+  return collapseRepeat((m ? m[1] : reply).trim());
+}
+
+/** Some providers occasionally return the whole reply twice ("Sent.Sent."); say it once. */
+export function collapseRepeat(text: string): string {
+  const compact = text.replace(/\s+/g, '');
+  if (compact.length < 8 || compact.length % 2) return text;
+  const half = compact.slice(0, compact.length / 2);
+  if (half !== compact.slice(compact.length / 2)) return text;
+  // Walk the original text until the first half's non-space characters are used up.
+  let seen = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (!/\s/.test(text[i])) seen++;
+    if (seen === half.length) return text.slice(0, i + 1).trim();
+  }
+  return text;
 }

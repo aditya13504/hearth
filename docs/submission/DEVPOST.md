@@ -92,7 +92,7 @@ cross-person memory is what makes it a care product rather than a pill timer.
   - medicines are added by voice and checked against RxNorm
   - it uses the real clock, keeps data persistent and saves atomically, and never resets data
   - browser access is limited to trusted origins
-- **Tests.** 49 automated tests, including end-to-end protocol tests with a real MCP client and tests for the guardrail against claimed actions:
+- **Tests.** 54 automated tests, including end-to-end protocol tests with a real MCP client and tests for the guardrail against claimed actions:
   - version negotiation and auth
   - double-dose protection across two people
   - push notifications

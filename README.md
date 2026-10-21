@@ -133,7 +133,7 @@ Then ask *"How's Mom doing this week?"*
 npm test
 ```
 
-49 automated tests:
+54 automated tests:
 
 - **Unit tests** cover the care engine: fuzzy medication matching, double-dose protection, scheduling,
   missed-dose escalation, adherence, refills, and red-flag check-ins.

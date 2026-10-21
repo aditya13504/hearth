@@ -45,7 +45,7 @@ use the suggestion chips under each device, or press the mic button and speak.
 | 1:45–2:10 | **Play step 6** (*June mentions a fall*). Maya's phone glows red, shows an alert and speaks. | "When June mentions a fall, Hearth logs it and alerts Maya right away. Her phone speaks up without being asked." |
 | 2:10–2:20 | **Play step 7** (*Maya replies*). June's display reads the message out. | "Maya can reply by voice, and June hears it in her kitchen." |
 | 2:20–2:40 | **Play step 8** (*Maya checks the week*). Scroll the summary card on her phone a little. | "And when Maya asks how Mom's doing, she gets the week: adherence, missed doses, mood from June's check-ins, and refills to act on, from context shared across both people and both devices." |
-| 2:40–2:55 | Scroll down to the MCP log. Click one row (**elicitation/create** or **notifications/resources/updated**) to show its JSON. | "Under the hood: 12 tools with output schemas, subscribable resources, prompts, elicitation, three MCP Apps, an Agent Skill, NIH RxNorm for misheard drug names, and 49 automated tests. Countertop is MIT-licensed for any MCP developer." |
+| 2:40–2:55 | Scroll down to the MCP log. Click one row (**elicitation/create** or **notifications/resources/updated**) to show its JSON. | "Under the hood: 12 tools with output schemas, subscribable resources, prompts, elicitation, three MCP Apps, an Agent Skill, NIH RxNorm for misheard drug names, and 54 automated tests. Countertop is MIT-licensed for any MCP developer." |
 | 2:55–3:00 | Scroll back to the top. | "Hearth. Care from anywhere." |
 
 ## Optional extra (only if you're under time)
