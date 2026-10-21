@@ -126,32 +126,43 @@ async function complete(route, messages, tools) {
   }
 }
 
+/** How long a 429'd route should rest: "try again in 15s", "retry in 15h13m54s", or a daily quota. */
+function retryAfterMs(text) {
+  const m = text.match(/(?:try again|retry) in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s/i);
+  if (m) return ((Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0)) * 60 + Number(m[3])) * 1000 + 250;
+  return /per ?day|PerDay/i.test(text) ? 3_600_000 : 20_000;
+}
+
 app.post('/api/llm', async (req, res) => {
   if (routes.length === 0) return res.status(500).json({ error: 'No LLM configured. Set GROQ_API_KEY or LLM_API_KEY in .env (see README).' });
   const { messages, tools } = req.body ?? {};
-  const now = Date.now();
-  const available = routes.filter((r) => (cooldownUntil.get(r) ?? 0) <= now);
   let last = null;
-  for (const route of available.length ? available : routes) {
-    const upstream = await complete(route, messages, tools);
-    const text = await upstream.text();
-    if (upstream.ok) return res.status(200).type('application/json').send(text);
-    last = { status: upstream.status, text };
-    console.warn(`[countertop] ${route.model} -> ${upstream.status}: ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
-    if (process.env.COUNTERTOP_DEBUG) {
-      const { appendFileSync } = await import('node:fs');
-      appendFileSync(join(here, 'llm-errors.jsonl'), JSON.stringify({ route: route.model, status: upstream.status, text, messages, tools }) + '\n');
+  // Two passes: if every model is only briefly rate-limited (per-minute limits), wait for the first one
+  // to free up rather than fail. A pause in a demo is better than an error.
+  for (let pass = 0; pass < 2; pass++) {
+    const now = Date.now();
+    const available = routes.filter((r) => (cooldownUntil.get(r) ?? 0) <= now);
+    for (const route of available) {
+      const upstream = await complete(route, messages, tools);
+      const text = await upstream.text();
+      if (upstream.ok) return res.status(200).type('application/json').send(text);
+      last = { status: upstream.status, text };
+      console.warn(`[countertop] ${route.model} -> ${upstream.status}: ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
+      if (process.env.COUNTERTOP_DEBUG) {
+        const { appendFileSync } = await import('node:fs');
+        appendFileSync(join(here, 'llm-errors.jsonl'), JSON.stringify({ route: route.model, status: upstream.status, text, messages, tools }) + '\n');
+      }
+      if (upstream.status === 429) cooldownUntil.set(route, Date.now() + retryAfterMs(text));
+      else if (upstream.status >= 500) cooldownUntil.set(route, Date.now() + 15_000);
+      else return res.status(upstream.status).type('application/json').send(text); // our request's fault; another model won't fix it
     }
-    // Daily quota gone: park this route for an hour. Per-minute limits and overload: a short pause.
-    if (upstream.status === 429) {
-      const retryIn = text.match(/try again in (?:(\d+)m)?([\d.]+)s/i);
-      const waitMs = /per ?day|PerDay/i.test(text) ? 3_600_000 : retryIn ? (Number(retryIn[1] ?? 0) * 60 + Number(retryIn[2])) * 1000 + 250 : 20_000;
-      cooldownUntil.set(route, Date.now() + waitMs);
-    }
-    else if (upstream.status >= 500) cooldownUntil.set(route, Date.now() + 15_000);
-    else break; // 4xx other than 429 is our request's fault; another model won't fix it.
+    const soonest = Math.min(...routes.map((r) => cooldownUntil.get(r) ?? 0)) - Date.now();
+    if (pass === 0 && soonest > 0 && soonest <= 30_000) {
+      console.warn(`[countertop] all models rate-limited; waiting ${Math.ceil(soonest / 1000)}s`);
+      await new Promise((r) => setTimeout(r, soonest + 100));
+    } else break;
   }
-  res.status(last?.status ?? 502).type('application/json').send(last?.text ?? JSON.stringify({ error: 'All models are busy' }));
+  res.status(last?.status ?? 503).type('application/json').send(last?.text ?? JSON.stringify({ error: 'All models are busy right now.' }));
 });
 
 if (prod) {

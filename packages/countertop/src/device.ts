@@ -254,9 +254,15 @@ export class Device {
         }
       }
     } catch (err) {
-      const message = `Sorry, something went wrong: ${(err as Error).message}`;
+      const raw = (err as Error).message;
+      console.warn(`[${this.cfg.id}] turn failed:`, raw);
+      // People hear this, so say something human; the details stay in the console.
+      const message = /quota|rate limit|busy|429|503|exceeded|timeout/i.test(raw)
+        ? "Sorry, I'm a little busy right now. Please ask me again in a moment."
+        : "Sorry, something went wrong on my side. Please try that again.";
       this.showReply(message);
       this.addBubble('assistant', message);
+      void speak(message);
     } finally {
       this.busy = false;
       this.el.classList.remove('is-thinking');
