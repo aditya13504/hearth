@@ -205,6 +205,8 @@ export class Device {
         this.addBubble('user', text);
         this.history.push({ role: 'user', content: text });
       } else {
+        // A notification: nobody spoke, so don't leave the last utterance captioned above it.
+        this.showSaid('');
         this.history.push({ role: 'user', content: text });
       }
       this.showReply('');
