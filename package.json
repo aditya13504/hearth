@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "description": "Hearth: an Alexa+ care companion MCP server, plus Countertop, an open-source voice assistant simulator for MCP servers.",
   "license": "MIT",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm test -w hearth-server",
     "typecheck": "npm run typecheck --workspaces --if-present"
   }
 }

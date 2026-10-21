@@ -203,3 +203,36 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+/* Phone-width cards (caregiver's phone) */
+@media (max-width: 420px) {
+  html,
+  body {
+    font-size: 15px;
+  }
+  .wrap {
+    padding: 14px;
+  }
+  h1 {
+    font-size: 21px;
+  }
+  .big {
+    font-size: 40px;
+  }
+  .panel {
+    padding: 12px;
+  }
+  .item {
+    font-size: 14px;
+  }
+  .item button {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .badge {
+    font-size: 12px;
+    padding: 3px 9px;
+  }
+  .receipt .total {
+    font-size: 20px;
+  }
+}

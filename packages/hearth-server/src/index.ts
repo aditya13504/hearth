@@ -26,7 +26,9 @@ export function startHearth(opts: HearthOptions = {}) {
   const port = opts.port ?? Number(process.env.PORT ?? 8787);
   const demo = opts.demo ?? process.env.HEARTH_DEMO !== '0';
   const clock = new Clock();
-  if (demo && process.env.HEARTH_START_TIME) clock.setTimeOfDay(process.env.HEARTH_START_TIME);
+  // The demo story starts just before the 8 AM medicines; set HEARTH_START_TIME=now to use real time.
+  const start = process.env.HEARTH_START_TIME ?? '07:55';
+  if (demo && start !== 'now') clock.setTimeOfDay(start);
   const store = new Store(opts.dataFile === undefined ? join(root, 'data', 'hearth.json') : opts.dataFile, clock.now());
   const care = new CareService(store, clock);
   const deps = { care, rx: new RxNorm(join(root, 'cache')), fda: new OpenFda(join(root, 'cache')), uiDir: join(root, 'ui-dist') };

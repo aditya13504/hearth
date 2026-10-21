@@ -103,6 +103,8 @@ export interface Household {
 
 export interface Db {
   version: 1;
+  /** Day the demo history was generated for; history is regenerated when this goes stale. */
+  seededOn: string;
   households: Household[];
 }
 
@@ -116,8 +118,9 @@ export class Store {
   db: Db;
 
   constructor(private readonly file: string | null, seedNow: Date) {
-    if (file && existsSync(file)) {
-      this.db = JSON.parse(readFileSync(file, 'utf8')) as Db;
+    const saved = file && existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Db) : null;
+    if (saved && saved.seededOn === dateKey(seedNow)) {
+      this.db = saved;
     } else {
       this.db = seed(seedNow);
       this.save();
@@ -248,6 +251,7 @@ export function seed(now: Date): Db {
 
   return {
     version: 1,
+    seededOn: today,
     households: [
       {
         id: 'hh_alvarez',

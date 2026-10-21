@@ -72,7 +72,8 @@ function loadConfig() {
     const file = resolve(dirname(configPath), p);
     return { path: p, content: existsSync(file) ? readFileSync(file, 'utf8') : '' };
   });
-  config.llm = { model: routes.map((r) => r.model.split('/').pop()).join(' → ') || 'none', configured: routes.length > 0 };
+  const names = routes.map((r) => r.model.split('/').pop());
+  config.llm = { model: names.length > 1 ? `${names[0]} + ${names.length - 1} fallbacks` : (names[0] ?? 'none'), configured: routes.length > 0 };
   return config;
 }
 
@@ -88,8 +89,13 @@ function portableMessages(messages, route) {
     if (m.tool_calls) {
       out.tool_calls = m.tool_calls.map((c) => {
         const call = { id: c.id, type: 'function', function: { name: c.function.name, arguments: c.function.arguments } };
-        // Gemini 3 needs its thought signatures echoed back on later turns.
-        if (route.name === 'gemini' && c.extra_content) call.extra_content = c.extra_content;
+        // Gemini 3 needs its thought signatures echoed back on later turns. Calls made by another
+        // provider have none; Google documents this placeholder for injected/transferred calls.
+        if (route.name === 'gemini') {
+          call.extra_content = c.extra_content?.google?.thought_signature
+            ? c.extra_content
+            : { google: { thought_signature: 'skip_thought_signature_validator' } };
+        }
         return call;
       });
     }

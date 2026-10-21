@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7a6a5f"/>
+    </marker>
+    <style>
+      .box{fill:#fffaf3;stroke:#e2d4c6;stroke-width:1.5}
+      .hot{fill:#fbe6dc;stroke:#c2562f;stroke-width:1.5}
+      .cool{fill:#eef6fb;stroke:#7fb2cf;stroke-width:1.5}
+      .h{font-size:17px;font-weight:700;fill:#2b211b}
+      .t{font-size:13px;fill:#4a3d34}
+      .s{font-size:12px;fill:#7a6a5f}
+      .lbl{font-size:12px;fill:#7a6a5f;font-weight:600}
+      .line{stroke:#7a6a5f;stroke-width:1.6;fill:none}
+    </style>
+  </defs>
+  <rect width="1100" height="520" fill="#ffffff"/>
+
+  <!-- Devices / Countertop -->
+  <rect x="20" y="20" width="360" height="480" rx="16" class="cool"/>
+  <text x="40" y="52" class="h">Countertop (browser)</text>
+  <text x="40" y="72" class="s">Alexa+-style simulator · open source</text>
+
+  <rect x="40" y="90" width="320" height="120" rx="12" class="box"/>
+  <text x="56" y="116" class="h" style="font-size:15px">June's kitchen display</text>
+  <text x="56" y="138" class="t">voice in/out · MCP Apps cards</text>
+  <text x="56" y="158" class="t">elicitation prompts · proactive reminders</text>
+  <text x="56" y="190" class="s">token: june-kitchen-echo (care recipient)</text>
+
+  <rect x="40" y="225" width="320" height="110" rx="12" class="box"/>
+  <text x="56" y="251" class="h" style="font-size:15px">Maya's phone</text>
+  <text x="56" y="273" class="t">caregiver briefings · alerts pushed live</text>
+  <text x="56" y="315" class="s">token: maya-phone (caregiver)</text>
+
+  <rect x="40" y="350" width="320" height="64" rx="12" class="box"/>
+  <text x="56" y="376" class="h" style="font-size:15px">Agent loop</text>
+  <text x="56" y="398" class="t">LLM + Agent Skill (hearth-care/SKILL.md)</text>
+
+  <rect x="40" y="428" width="320" height="56" rx="12" class="box"/>
+  <text x="56" y="452" class="h" style="font-size:15px">Protocol inspector</text>
+  <text x="56" y="472" class="t">every JSON-RPC message, both directions</text>
+
+  <!-- MCP link -->
+  <path d="M380 170 L560 170" class="line" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <text x="400" y="150" class="lbl">MCP · Streamable HTTP</text>
+  <text x="400" y="190" class="s">protocol 2025-11-25</text>
+  <text x="400" y="206" class="s">Mcp-Session-Id per device</text>
+  <path d="M380 290 L560 290" class="line" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <text x="400" y="278" class="s">resources/updated (SSE)</text>
+  <text x="400" y="310" class="s">elicitation/create</text>
+
+  <!-- Hearth server -->
+  <rect x="560" y="20" width="330" height="480" rx="16" class="hot"/>
+  <text x="580" y="52" class="h">Hearth MCP server</text>
+  <text x="580" y="72" class="s">Node · TypeScript · MCP TS SDK v2</text>
+
+  <rect x="580" y="90" width="290" height="150" rx="12" class="box"/>
+  <text x="596" y="114" class="h" style="font-size:15px">MCP surface</text>
+  <text x="596" y="136" class="t">12 tools (output schemas, annotations)</text>
+  <text x="596" y="156" class="t">3 MCP Apps: today · summary · refill</text>
+  <text x="596" y="176" class="t">resources: profile, inbox (subscribable)</text>
+  <text x="596" y="196" class="t">prompts · server instructions</text>
+  <text x="596" y="216" class="t">elicitation for purchases</text>
+
+  <rect x="580" y="255" width="290" height="130" rx="12" class="box"/>
+  <text x="596" y="279" class="h" style="font-size:15px">Care engine</text>
+  <text x="596" y="301" class="t">schedule · double-dose guard</text>
+  <text x="596" y="321" class="t">adherence · refills · red-flag check-ins</text>
+  <text x="596" y="341" class="t">scheduler → reminders, missed-dose alerts</text>
+  <text x="596" y="361" class="t">per-person inbox · demo clock</text>
+
+  <rect x="580" y="400" width="290" height="84" rx="12" class="box"/>
+  <text x="596" y="424" class="h" style="font-size:15px">Household store</text>
+  <text x="596" y="446" class="t">members · meds · dose log · check-ins</text>
+  <text x="596" y="466" class="t">orders (simulated pharmacy)</text>
+
+  <!-- External -->
+  <path d="M890 160 L940 160" class="line" marker-end="url(#arr)"/>
+  <path d="M890 330 L940 330" class="line" marker-end="url(#arr)"/>
+  <rect x="940" y="110" width="140" height="100" rx="12" class="box"/>
+  <text x="954" y="136" class="h" style="font-size:14px">NIH RxNorm</text>
+  <text x="954" y="158" class="s">spoken drug names →</text>
+  <text x="954" y="174" class="s">ingredients (fuzzy)</text>
+  <rect x="940" y="280" width="140" height="100" rx="12" class="box"/>
+  <text x="954" y="306" class="h" style="font-size:14px">openFDA</text>
+  <text x="954" y="328" class="s">FDA drug labels,</text>
+  <text x="954" y="344" class="s">quoted with source</text>
+</svg>
