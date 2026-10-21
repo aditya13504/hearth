@@ -88,13 +88,15 @@ Device tokens for the demo household: `june-kitchen-echo` (June, care recipient)
 
 ### Use Hearth from any MCP client
 
-Hearth is a standard MCP server, so it is not tied to Countertop. For example, with Claude Code:
+Hearth is a standard MCP server, so it is not tied to Countertop. Any client that supports Streamable HTTP and a
+custom `Authorization` header can connect. The test suite verifies this with the official MCP TypeScript SDK client.
+For example, to add it to Claude Code:
 
 ```bash
 claude mcp add --transport http hearth http://localhost:8787/mcp --header "Authorization: Bearer maya-phone"
 ```
 
-Then ask *"How's Mom doing this week?"* Any client that supports Streamable HTTP and custom headers works the same way.
+Then ask *"How's Mom doing this week?"*
 
 ### Tests
 
