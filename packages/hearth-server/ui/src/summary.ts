@@ -3,6 +3,10 @@ import { esc, mountView, type Structured } from './common';
 
 const root = document.getElementById('root')!;
 const MOOD_LABEL: Record<string, string> = { great: 'Great', good: 'Good', okay: 'Okay', not_great: 'Not great', bad: 'Bad' };
+const slotTime = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${h % 12 || 12}${m ? `:${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'AM' : 'PM'}`;
+};
 const weekday = (day: string) => new Date(`${day}T12:00:00`).toLocaleDateString([], { weekday: 'short' });
 
 /** Daily adherence as columns: filled height = share of doses taken. */
@@ -70,7 +74,7 @@ function render(s: Structured, app: App) {
       <div class="panel" style="grid-column:1/-1">
         <h2>Needs attention</h2>
         ${alerts.map((x) => `<div class="item"><div><div class="name" style="font-size:17px">${esc(x.title)}</div><div class="meta">${esc(x.detail)}</div></div><span class="badge ${x.severity === 'urgent' ? 'missed' : 'due'}">${esc(x.severity)}</span></div>`).join('')}
-        ${a.missedDoses.map((m: Structured) => `<div class="item"><div>Missed ${esc(m.medication)} · ${esc(weekday(m.day))} ${esc(m.slot)}</div><span class="badge missed">missed</span></div>`).join('')}
+        ${a.missedDoses.map((m: Structured) => `<div class="item"><div>Missed ${esc(m.medication)} · ${esc(weekday(m.day))} ${esc(slotTime(m.slot))}</div><span class="badge missed">missed</span></div>`).join('')}
         ${low.map((r: Structured) => `<div class="item"><div>${esc(r.medication)} runs out in ${r.daysLeft} days</div><button data-med="${esc(r.medication)}">Order refill</button></div>`).join('')}
         ${!alerts.length && !a.missedDoses.length && !low.length ? '<div class="empty">Nothing needs attention.</div>' : ''}
       </div>

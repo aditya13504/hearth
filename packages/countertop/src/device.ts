@@ -10,6 +10,9 @@ type ElicitContent = Record<string, string | number | boolean | string[]>;
 
 const MAX_TOOL_ROUNDS = 6;
 const YES = /\b(yes|yeah|yep|sure|ok(ay)?|please do|go ahead|do it|place it|confirm|correct|that'?s right)\b/i;
+/** Replies that say an action was performed: "I've noted…", "I logged…", "I let Maya know…". */
+const CLAIMS_ACTION =
+  /\bI(?:'ve| have|'ll| will)?\s+(?:just\s+|already\s+)?(?:noted|logged|recorded|saved|told|let \w+ know|alerted|notified|ordered|placed|sent|messaged|added|marked|checked you in)\b/i;
 const NO = /\b(no|nope|don'?t|do not|cancel|stop|never ?mind|not now|wait)\b/i;
 
 interface PendingElicitation {
@@ -164,6 +167,7 @@ export class Device {
       'You are heard, not read: answer in one or two short, warm sentences. No markdown, no lists, no emoji. Say times like "8 AM".',
       'When a tool shows a card on the screen, give the one-line gist and mention it is on the screen instead of reading every detail.',
       'Prefer calling tools over guessing. You may call several tools in a row to finish the task.',
+      'Never say you did something (logged, recorded, told someone, ordered) unless a tool result in this conversation confirms it.',
       skills ? `\nAgent skill instructions:\n${skills}` : '',
       this.instructions ? `\nInstructions from the connected MCP server:\n${this.instructions}` : '',
     ].join('\n');
@@ -205,12 +209,24 @@ export class Device {
       }
       this.showReply('');
 
+      let toolCallsThisTurn = 0;
+      let challenged = false;
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        const msg = await chat(this.history, this.functions);
+        const msg = await chat(recentHistory(this.history), this.functions);
         this.history.push(msg);
         const calls = msg.tool_calls ?? [];
+        toolCallsThisTurn += calls.length;
         if (calls.length === 0) {
           const reply = (msg.content ?? '').trim();
+          // Guardrail: the assistant may not claim an action it never took. Send it back once to do it for real.
+          if (!challenged && toolCallsThisTurn === 0 && CLAIMS_ACTION.test(reply)) {
+            challenged = true;
+            this.history.push({
+              role: 'user',
+              content: `[Countertop check — not from ${this.cfg.owner}] Your reply claims you did something, but you called no tool this turn, so nothing happened. Call the right tool now; then reply based only on its result.`,
+            });
+            continue;
+          }
           this.showReply(reply);
           this.addBubble('assistant', reply);
           await speak(reply);
@@ -227,7 +243,8 @@ export class Device {
           this.addToolChip(tool?.title ?? call.function.name);
           let result: CallToolResult;
           try {
-            result = (await this.client.callTool({ name: call.function.name, arguments: args })) as CallToolResult;
+            // Generous timeout: a tool may be waiting on the person to answer a confirmation.
+            result = (await this.client.callTool({ name: call.function.name, arguments: args }, { timeout: 5 * 60_000 })) as CallToolResult;
           } catch (err) {
             result = { content: [{ type: 'text', text: `Tool error: ${(err as Error).message}` }], isError: true };
           }
@@ -467,13 +484,23 @@ export class Device {
   }
 }
 
+/** System prompt plus the last few exchanges, cut at a user message so tool calls stay paired with their results. */
+const KEEP_USER_TURNS = 4;
+function recentHistory(history: ChatMessage[]): ChatMessage[] {
+  const userIdx = history.map((m, i) => (m.role === 'user' ? i : -1)).filter((i) => i > 0);
+  if (userIdx.length <= KEEP_USER_TURNS) return history;
+  return [history[0], ...history.slice(userIdx[userIdx.length - KEEP_USER_TURNS])];
+}
+
 function formatToolResult(result: CallToolResult, hasUi: boolean): string {
   const text = (result.content ?? [])
     .filter((c: any) => c.type === 'text')
     .map((c: any) => c.text)
     .join('\n');
-  const structured = result.structuredContent ? `\nstructuredContent: ${JSON.stringify(result.structuredContent)}` : '';
+  // A readable text summary is what the model needs; raw structured JSON only when there is no summary.
+  // (Keeps prompts small enough for free-tier token-per-minute limits.)
+  const structured = result.structuredContent && text.length < 40 ? `\nstructuredContent: ${JSON.stringify(result.structuredContent).slice(0, 2000)}` : '';
   const note = hasUi ? '\n[A card with these details is now showing on the device screen.]' : '';
   const out = `${result.isError ? 'ERROR: ' : ''}${text}${structured}${note}`;
-  return out.length > 6000 ? `${out.slice(0, 6000)}…` : out;
+  return out.length > 3000 ? `${out.slice(0, 3000)}…` : out;
 }

@@ -400,13 +400,16 @@ export function createHearthServer(deps: HearthDeps, id: SessionIdentity) {
             properties: { confirm: { type: 'boolean', title: 'Place this order', description: summary } },
             required: ['confirm'],
           },
-        });
+        }, { timeout: 5 * 60_000 }); // people take longer than the SDK default to answer
         if (answer.action === 'accept' && answer.content?.confirm === true) {
           const placed = care.placeOrder(household(), quote, me());
-          return { content: text(`Ordered: ${summary}. Order ${placed.id}.`), structuredContent: describeOrder(placed) };
+          return {
+            content: text(`DONE: the person confirmed on the device and the order is placed — ${summary}. Order ${placed.id}. Tell them it is ordered; do not ask again.`),
+            structuredContent: describeOrder(placed),
+          };
         }
         const declined = care.declineOrder(household(), quote);
-        return { content: text('Okay, I did not place the order.'), structuredContent: describeOrder(declined) };
+        return { content: text('The person said no on the device. Nothing was ordered.'), structuredContent: describeOrder(declined) };
       }
       return {
         content: text(`Quote ready, NOT yet ordered: ${summary}. Read this back and ask the person to confirm, then call confirm_refill with order_id ${quote.id}.`),
@@ -442,7 +445,7 @@ export function createHearthServer(deps: HearthDeps, id: SessionIdentity) {
     {
       title: 'Daily check-in',
       description:
-        'Record how the person is feeling today, with their own words as the note. Mentions of a fall, chest pain, dizziness, breathing trouble, confusion or bleeding — or a "bad" mood — automatically alert the family.',
+        'Call this EVERY time the person says how they feel or mentions a health event (a fall, pain, dizziness, poor sleep) — it is the only way the family finds out. Record their own words as the note. Mentions of a fall, chest pain, dizziness, breathing trouble, confusion or bleeding — or a "bad" mood — automatically alert the family.',
       inputSchema: z.object({
         mood: z.enum(['great', 'good', 'okay', 'not_great', 'bad']),
         note: z.string().optional().describe("The person's own words"),

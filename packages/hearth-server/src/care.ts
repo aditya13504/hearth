@@ -455,7 +455,7 @@ export class CareService {
         this.notifyCaregivers(h, {
           kind: 'alert',
           severity: 'info',
-          title: `${r.medication} is running low`,
+          title: `${recipient.name}'s ${r.medication} is running low`,
           detail: `${r.pillsOnHand} left — about ${r.daysLeft} days. ${r.refillsRemaining} refills remaining on the prescription.`,
           key: `low|${r.medId}|${day}`,
         });
