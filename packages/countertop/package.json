@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node server.mjs",
     "build": "vite build",
-    "start": "NODE_ENV=production node server.mjs",
+    "start": "vite build && node server.mjs --prod",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,5 +18,21 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "vite": "^7.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aditya13504/countertop.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "alexa",
+    "voice",
+    "simulator",
+    "mcp-apps",
+    "elicitation"
+  ],
+  "engines": {
+    "node": ">=20"
   }
 }

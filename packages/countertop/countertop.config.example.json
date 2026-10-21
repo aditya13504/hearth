@@ -1,0 +1,25 @@
+{
+  "title": "My MCP server on Countertop",
+  "subtitle": "Voice assistant simulator for MCP servers",
+  "skills": [],
+  "voice": { "preferred": ["Ava Online (Natural)", "Aria Online (Natural)", "Natural", "Google US English", "Samantha"] },
+  "devices": [
+    {
+      "id": "kitchen",
+      "label": "Kitchen display",
+      "variant": "display",
+      "owner": "Alex",
+      "mcpUrl": "http://localhost:8787/mcp",
+      "idleTitle": "Hi, Alex",
+      "suggestions": ["What can you do?"]
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "variant": "phone",
+      "owner": "Sam",
+      "mcpUrl": "http://localhost:8787/mcp",
+      "suggestions": ["What's new?"]
+    }
+  ]
+}

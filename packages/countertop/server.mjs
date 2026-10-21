@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const prod = process.env.NODE_ENV === 'production';
+const prod = process.env.NODE_ENV === 'production' || process.argv.includes('--prod');
 
 /** Minimal .env loader: looks in this package, then walks up to the repo root. */
 function loadEnv() {
