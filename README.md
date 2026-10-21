@@ -74,10 +74,14 @@ cp .env.example .env      # then add GROQ_API_KEY (free: console.groq.com/keys) 
 npm run dev
 ```
 
-Open **http://localhost:5173** in **Edge or Chrome** (both support the Web Speech API). Use the mic buttons, type,
-or tap the suggestion chips under each device. The **Demo clock** bar moves time: start at *7:55 AM*, press
-**8:00 AM** to trigger the reminder, or **9:05 AM** to see the missed-dose alert on Maya's phone. **Reset demo data**
-starts over.
+Open **http://localhost:5173** in **Edge or Chrome** (both support the Web Speech API).
+
+- **Run the story** (right-hand panel): click **Play step 1, 2, 3…** and each step plays itself on the right device.
+  This is the guided demo.
+- **June's day** (the top band) moves the demo clock: *7:55 AM*, **8:00 AM** for the reminder, **9:05 AM** for the
+  missed-dose alert on Maya's phone, and so on.
+- To try it yourself, talk to either device with its mic button, type, or tap a suggestion chip.
+- **Reset demo** in the top bar starts over.
 
 | Service | URL |
 |---|---|

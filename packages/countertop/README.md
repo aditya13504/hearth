@@ -41,7 +41,12 @@ Countertop gives you that loop on your own machine, with any LLM.
   expandable payloads.
 - **Any OpenAI-compatible LLM**: Groq, Gemini, OpenAI, OpenRouter, a local Ollama, and so on. Keys stay on the small
   Node server, never in the page. A route chain fails over on rate limits, which suits free tiers.
-- **Demo clock controls** (optional), for servers with time-based behaviour.
+- **Guided story rail** (optional): a numbered list of steps from the config. Each step says a line on a device or
+  moves the demo clock, and ticks itself off when the assistant finishes. Good for live demos and recordings.
+- **Day timeline** (optional): a time-of-day control for servers with time-based behaviour. A sun moves along an arc
+  and the sky follows the hour.
+- **Device states you can see**: an Alexa-style light bar for listening, thinking and speaking, a glow when a
+  notification arrives, and a confirmation sheet that slides up.
 
 ## Quick start
 
@@ -66,8 +71,12 @@ Your MCP server must serve Streamable HTTP and allow CORS from the Countertop or
   "voice": { "preferred": ["Ava Online (Natural)"] }, // optional TTS voice preference
   "demo": {                                          // optional: a clock your server exposes
     "url": "http://localhost:8787/demo",             // GET /state -> {now}, POST /clock {time|advanceMinutes}, POST /reset
-    "presets": [{ "label": "8:00 AM", "time": "08:00" }]
+    "presets": [{ "label": "8:00 AM", "time": "08:00", "caption": "Morning medicine" }]
   },
+  "story": [                                         // optional guided demo
+    { "title": "Morning medicine time", "time": "08:00" },
+    { "title": "Log a pill", "device": "kitchen", "say": "I just took my blood pressure pill" }
+  ],
   "devices": [
     {
       "id": "kitchen",

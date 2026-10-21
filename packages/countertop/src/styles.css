@@ -452,6 +452,8 @@ main {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  /* Keep the device title clear of the sticky top bar when a story step scrolls to it. */
+  scroll-margin-top: 84px;
 }
 .device.display {
   flex: 1 1 560px;
