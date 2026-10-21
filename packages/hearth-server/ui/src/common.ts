@@ -32,9 +32,9 @@ export function clock(iso: string): string {
 /** A small pill drawn in the colour the label describes, so June can match the card to the bottle. */
 export function pill(looks: string): string {
   const l = looks.toLowerCase();
-  const fill = l.includes('pink') ? '#f4a7b9' : l.includes('yellow') ? '#f6d365' : l.includes('blue') ? '#9cc3f0' : '#f5f1ea';
+  const fill = l.includes('pink') ? '#f4a7b9' : l.includes('yellow') ? '#f6d365' : l.includes('blue') ? '#9cc3f0' : '#f4f6f8';
   const oval = l.includes('oval') || l.includes('capsule');
   return oval
-    ? `<svg width="40" height="24" viewBox="0 0 40 24" aria-hidden="true"><rect x="1" y="1" width="38" height="22" rx="11" fill="${fill}" stroke="#bfae9f"/><line x1="20" y1="4" x2="20" y2="20" stroke="#bfae9f"/></svg>`
-    : `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="13" fill="${fill}" stroke="#bfae9f"/></svg>`;
+    ? `<svg width="40" height="24" viewBox="0 0 40 24" aria-hidden="true"><rect x="1" y="1" width="38" height="22" rx="11" fill="${fill}" stroke="#9aa5b1"/><line x1="20" y1="4" x2="20" y2="20" stroke="#9aa5b1"/></svg>`
+    : `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="13" fill="${fill}" stroke="#9aa5b1"/></svg>`;
 }

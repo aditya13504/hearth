@@ -1,22 +1,39 @@
 {
-  "title": "Hearth on Countertop",
-  "subtitle": "Alexa+-style simulation of the Hearth MCP add-on",
+  "title": "Hearth",
+  "subtitle": "Alexa+ add-on, running in the Countertop simulator",
+  "headline": "Care for Mom from anywhere, by voice.",
+  "intro": "June talks to her kitchen display. Her daughter Maya checks in from her phone. Both are talking to one Hearth MCP server, so reminders, refills and worries reach the right person.",
   "skills": ["../../skills/hearth-care/SKILL.md"],
   "voice": { "preferred": ["Ava Online (Natural)", "Aria Online (Natural)", "Jenny Online (Natural)", "Natural", "Google US English", "Samantha"] },
   "demo": {
     "url": "http://localhost:8787/demo",
     "presets": [
-      { "label": "7:55 AM", "time": "07:55" },
-      { "label": "8:00 AM", "time": "08:00" },
-      { "label": "9:05 AM", "time": "09:05" },
-      { "label": "6:00 PM", "time": "18:00" },
-      { "label": "9:00 PM", "time": "21:00" }
+      { "label": "7:55 AM", "time": "07:55", "caption": "Before breakfast" },
+      { "label": "8:00 AM", "time": "08:00", "caption": "Morning medicine" },
+      { "label": "9:05 AM", "time": "09:05", "caption": "An hour late" },
+      { "label": "6:00 PM", "time": "18:00", "caption": "Dinner dose" },
+      { "label": "9:00 PM", "time": "21:00", "caption": "Bedtime dose" }
     ]
   },
+  "story": [
+    { "title": "Morning medicine time", "time": "08:00", "note": "The server pushes a reminder and June's display speaks up on its own." },
+    { "title": "June logs a pill", "device": "june", "say": "I just took my blood pressure pill" },
+    { "title": "She forgets and asks again", "device": "june", "say": "Did I take the pink one? I might take another", "note": "Hearth tells her not to take a second dose." },
+    { "title": "What is this pill for?", "device": "june", "say": "What is the white oval one for?", "note": "Answered from the FDA drug label." },
+    { "title": "Running low", "device": "june", "say": "I'm almost out of metformin, can you order more?", "note": "Say or tap yes on the display to confirm the order." },
+    { "title": "June mentions a fall", "device": "june", "say": "I fell getting out of my chair this morning but I'm okay", "note": "Maya's phone is alerted right away." },
+    { "title": "Maya replies", "device": "maya", "say": "Let Mom know I'll call her at 6", "note": "June's display reads it out." },
+    { "title": "Maya checks the week", "device": "maya", "say": "How's Mom doing this week?" }
+  ],
+  "links": [
+    { "label": "Hearth on GitHub", "href": "https://github.com/aditya13504/hearth" },
+    { "label": "Countertop on GitHub", "href": "https://github.com/aditya13504/countertop" }
+  ],
   "devices": [
     {
       "id": "june",
       "label": "June's kitchen display",
+      "role": "June, 79, lives on her own",
       "variant": "display",
       "owner": "June",
       "mcpUrl": "http://localhost:8787/mcp",
@@ -35,11 +52,12 @@
     {
       "id": "maya",
       "label": "Maya's phone",
+      "role": "Her daughter, two hours away",
       "variant": "phone",
       "owner": "Maya",
       "mcpUrl": "http://localhost:8787/mcp",
       "token": "maya-phone",
-      "idleTitle": "Hearth",
+      "idleTitle": "Ask how your mom is doing",
       "suggestions": [
         "How's Mom doing this week?",
         "Did Mom take her morning pills?",

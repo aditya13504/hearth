@@ -26,19 +26,34 @@ export const setMuted = (m: boolean) => {
 };
 export const isMuted = () => muted;
 
-/** Speak text; resolves when finished (or immediately when muted/unsupported). */
-export function speak(text: string): Promise<void> {
-  if (muted || typeof speechSynthesis === 'undefined' || !text.trim()) return Promise.resolve();
+/**
+ * Speak text; resolves when finished (or after a short reading pause when muted/unsupported).
+ * `onStart` lets the device light its speaking indicator for exactly as long as it talks.
+ */
+export function speak(text: string, onStart?: () => void): Promise<void> {
+  if (!text.trim()) return Promise.resolve();
+  if (muted || typeof speechSynthesis === 'undefined') {
+    onStart?.();
+    return new Promise((r) => setTimeout(r, Math.min(2500, 600 + text.length * 12)));
+  }
   return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    };
     const u = new SpeechSynthesisUtterance(text);
     const v = pickVoice();
     if (v) u.voice = v;
     u.rate = 1.0;
-    u.onend = () => resolve();
-    u.onerror = () => resolve();
+    u.onstart = () => onStart?.();
+    u.onend = finish;
+    u.onerror = finish;
     speechSynthesis.speak(u);
     // Some engines never fire onend for long text; don't block the UI forever.
-    setTimeout(resolve, Math.min(30_000, 2_000 + text.length * 90));
+    setTimeout(finish, Math.min(30_000, 2_000 + text.length * 90));
   });
 }
 

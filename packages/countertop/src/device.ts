@@ -1,6 +1,7 @@
 import type { CallToolResult, Client, Tool } from '@modelcontextprotocol/client';
 import { mountCard, uiResourceUri, type MountedCard } from './apphost';
 import { speakable, unbackedClaim } from './guard';
+import { icon } from './icons';
 import { escapeHtml } from './inspector';
 import { chat, toFunctions } from './llm';
 import { connectDevice } from './mcp';
@@ -20,19 +21,30 @@ interface PendingElicitation {
 
 type TurnSource = 'user' | 'notification' | 'card';
 
+export interface DeviceInfo {
+  protocol: string;
+  server: string;
+  tools: number;
+  resources: number;
+  prompts: number;
+}
+
 export class Device {
   readonly el: HTMLElement;
+  info: DeviceInfo | null = null;
   private client!: Client;
   private tools: Tool[] = [];
   private functions: ReturnType<typeof toFunctions> = [];
   private history: ChatMessage[] = [];
   private instructions = '';
   private busy = false;
-  private queue: Array<[string, TurnSource]> = [];
+  /** Turns run one at a time, in order; each caller gets a promise for its own turn. */
+  private chain: Promise<void> = Promise.resolve();
   private elicitation: PendingElicitation | null = null;
   private card: MountedCard | null = null;
   private seen = new Set<string>();
   private listening: { stop: () => void } | null = null;
+  private hintTimer: ReturnType<typeof setInterval> | undefined;
 
   private $ = <T extends HTMLElement = HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
 
@@ -40,48 +52,95 @@ export class Device {
     readonly cfg: DeviceConfig,
     private readonly app: CountertopConfig,
   ) {
-    this.el = document.createElement('section');
+    this.el = document.createElement('article');
     this.el.className = `device ${cfg.variant}`;
+    this.el.setAttribute('aria-label', cfg.label);
+    const screen =
+      cfg.variant === 'display'
+        ? `<div class="screen">
+             <div class="stage">${this.idleMarkup()}</div>
+             <div class="caption" aria-live="polite"><p class="said"></p><p class="reply"></p></div>
+             <div class="toasts" aria-live="assertive"></div>
+             <div class="sheet" hidden></div>
+             <div class="lightbar" aria-hidden="true"></div>
+           </div>`
+        : `<div class="screen">
+             <header class="app-bar">
+               <span class="app-time"></span>
+               <span class="app-title">${icon('hearth', 18)} Hearth</span>
+               <span class="app-dot" aria-hidden="true"></span>
+             </header>
+             <div class="feed" aria-live="polite"><p class="feed-empty">${escapeHtml(cfg.idleTitle ?? 'Ask a question')}</p></div>
+             <div class="toasts" aria-live="assertive"></div>
+             <div class="sheet" hidden></div>
+             <div class="lightbar" aria-hidden="true"></div>
+           </div>`;
+
     this.el.innerHTML = `
-      <div class="device-head">
-        <span class="device-name">${escapeHtml(cfg.label)}</span>
-        <span class="status" title="MCP connection">connecting…</span>
-      </div>
-      <div class="frame">
-        <div class="screen">
-          ${cfg.variant === 'phone' ? `<div class="phone-top"><span class="clock-small"></span><span>Assistant</span></div>` : ''}
-          <div class="stage">
-            <div class="idle">
-              <div class="idle-time"></div>
-              <div class="idle-date"></div>
-              <div class="idle-title">${escapeHtml(cfg.idleTitle ?? '')}</div>
-            </div>
-          </div>
-          <div class="feed"></div>
-          <div class="caption"><div class="said"></div><div class="reply"></div></div>
-          <div class="toasts"></div>
-          <div class="elicit hidden"></div>
-          <div class="listen-bar"></div>
+      <header class="device-head">
+        <div>
+          <h3 class="device-name">${escapeHtml(cfg.label)}</h3>
+          ${cfg.role ? `<p class="device-role">${escapeHtml(cfg.role)}</p>` : ''}
         </div>
+        <span class="conn" data-state="connecting">Connecting</span>
+      </header>
+      <div class="hardware">
+        <div class="bezel">${screen}</div>
+        ${cfg.variant === 'display' ? '<div class="base" aria-hidden="true"></div>' : ''}
       </div>
       <div class="controls">
-        <button class="mic" title="${canListen ? 'Push to talk' : 'Speech recognition unavailable in this browser'}" ${canListen ? '' : 'disabled'}>
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+        <button class="mic" type="button" aria-label="Talk to ${escapeHtml(cfg.owner)}'s assistant" title="${canListen ? 'Click and speak' : 'Speech recognition needs Edge or Chrome'}" ${canListen ? '' : 'disabled'}>
+          ${icon('mic', 22)}
         </button>
-        <form class="say"><input type="text" placeholder="Say something to ${escapeHtml(cfg.owner)}'s assistant…" /><button type="submit" class="secondary">Send</button></form>
+        <form class="say">
+          <label class="visually-hidden" for="say-${cfg.id}">Type what ${escapeHtml(cfg.owner)} says</label>
+          <input id="say-${cfg.id}" type="text" autocomplete="off" placeholder="Type what ${escapeHtml(cfg.owner)} says" />
+          <button type="submit" class="btn btn-quiet">Send</button>
+        </form>
       </div>
-      <div class="chips">${(cfg.suggestions ?? []).map((s) => `<button class="chip" type="button">${escapeHtml(s)}</button>`).join('')}</div>`;
+      <div class="try">
+        <p class="try-label">Try saying</p>
+        <div class="chips">${(cfg.suggestions ?? []).map((s) => `<button class="chip" type="button">${escapeHtml(s)}</button>`).join('')}</div>
+      </div>`;
 
     this.$<HTMLFormElement>('form.say').addEventListener('submit', (e) => {
       e.preventDefault();
       const input = this.$<HTMLInputElement>('form.say input');
       const text = input.value.trim();
       input.value = '';
-      if (text) this.input(text);
+      if (text) void this.say(text);
     });
-    this.el.querySelectorAll<HTMLButtonElement>('.chip').forEach((chip) => chip.addEventListener('click', () => this.input(chip.textContent ?? '')));
+    this.el.querySelectorAll<HTMLButtonElement>('.chip').forEach((chip) => chip.addEventListener('click', () => void this.say(chip.textContent ?? '')));
     this.$('.mic').addEventListener('click', () => this.toggleListening());
     this.tickClock(new Date());
+    this.rotateHints();
+  }
+
+  private idleMarkup(): string {
+    return `<div class="idle">
+      <p class="idle-time"></p>
+      <p class="idle-date"></p>
+      <p class="idle-title">${escapeHtml(this.cfg.idleTitle ?? '')}</p>
+      <p class="idle-hint"></p>
+    </div>`;
+  }
+
+  /** Like an Echo Show home screen, the idle display cycles through things to try. */
+  private rotateHints() {
+    const hints = this.cfg.suggestions ?? [];
+    if (this.cfg.variant !== 'display' || hints.length === 0) return;
+    let i = 0;
+    const show = () => {
+      const el = this.el.querySelector<HTMLElement>('.idle-hint');
+      if (!el) return;
+      el.classList.remove('in');
+      void el.offsetWidth;
+      el.textContent = `Try “${hints[i++ % hints.length]}”`;
+      el.classList.add('in');
+    };
+    show();
+    clearInterval(this.hintTimer);
+    this.hintTimer = setInterval(show, 6000);
   }
 
   // ------------------------------------------------------------------ lifecycle
@@ -94,41 +153,55 @@ export class Device {
       this.tools = (await this.client.listTools()).tools;
       this.functions = toFunctions(this.tools);
       this.instructions = this.client.getInstructions() ?? '';
-      const version = this.client.getNegotiatedProtocolVersion();
-      const server = this.client.getServerVersion();
-      this.setStatus(`MCP ${version} · ${server?.name ?? 'server'} · ${this.tools.length} tools`, 'ok');
+      const caps = this.client.getServerCapabilities();
+      const resources = caps?.resources ? (await this.client.listResources()).resources : [];
+      const prompts = caps?.prompts ? (await this.client.listPrompts()).prompts : [];
+      this.info = {
+        protocol: this.client.getNegotiatedProtocolVersion() ?? '?',
+        server: this.client.getServerVersion()?.name ?? 'server',
+        tools: this.tools.length,
+        resources: resources.length,
+        prompts: prompts.length,
+      };
+      this.setConn('ok', `Connected over MCP ${this.info.protocol}`);
 
-      if (this.client.getServerCapabilities()?.resources?.subscribe) {
-        const { resources } = await this.client.listResources();
+      if (caps?.resources?.subscribe) {
         for (const r of resources.filter((r) => /subscribe/i.test(r.description ?? ''))) {
           await this.primeSeen(r.uri);
           await this.client.subscribeResource({ uri: r.uri });
         }
       }
+      this.el.dispatchEvent(new CustomEvent('connected', { bubbles: true }));
     } catch (err) {
-      this.setStatus(`not connected: ${(err as Error).message}`, 'bad');
+      this.setConn('bad', `Can't reach the MCP server at ${this.cfg.mcpUrl}`);
+      console.warn(err);
     }
   }
 
-  private setStatus(text: string, kind: 'ok' | 'bad') {
-    const s = this.$('.status');
-    s.textContent = text;
-    s.className = `status ${kind}`;
+  private setConn(state: 'ok' | 'bad', text: string) {
+    const s = this.$('.conn');
+    s.dataset.state = state;
+    s.textContent = state === 'ok' ? 'Connected' : 'Offline';
+    s.title = text;
   }
 
   tickClock(now: Date) {
     const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     const date = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     // The idle screen disappears while a card is showing, so these may not exist.
-    this.el.querySelectorAll('.idle-time, .clock-small').forEach((el) => (el.textContent = time));
+    this.el.querySelectorAll('.idle-time, .app-time').forEach((el) => (el.textContent = time));
     this.el.querySelectorAll('.idle-date').forEach((el) => (el.textContent = date));
   }
 
   // ------------------------------------------------------------------ input
 
-  private input(text: string) {
-    if (this.elicitation) return this.answerElicitation(text);
-    void this.turn(text, 'user');
+  /** Say something to this device. Resolves when the assistant has finished responding. */
+  say(text: string): Promise<void> {
+    if (this.elicitation) {
+      this.answerElicitation(text);
+      return this.chain;
+    }
+    return this.turn(text, 'user');
   }
 
   private toggleListening() {
@@ -138,21 +211,25 @@ export class Device {
     }
     const mic = this.$('.mic');
     mic.classList.add('on');
-    this.el.classList.add('is-listening');
-    this.showSaid('…');
-    const session = listen((interim) => this.showSaid(interim || '…'));
+    this.setState('listening', true);
+    this.showSaid('Listening…');
+    const session = listen((interim) => this.showSaid(interim || 'Listening…'));
     this.listening = session;
     session.done
       .then((text) => {
-        if (text) this.input(text);
+        if (text) void this.say(text);
         else this.showSaid('');
       })
-      .catch((err) => this.showReply(`Microphone: ${err.message}`))
+      .catch((err) => this.showReply(`The microphone isn't available (${err.message}). Type instead.`))
       .finally(() => {
         this.listening = null;
         mic.classList.remove('on');
-        this.el.classList.remove('is-listening');
+        this.setState('listening', false);
       });
+  }
+
+  private setState(state: 'listening' | 'thinking' | 'speaking' | 'alert', on: boolean) {
+    this.el.classList.toggle(`is-${state}`, on);
   }
 
   // ------------------------------------------------------------------ agent loop
@@ -181,32 +258,32 @@ export class Device {
     }
   }
 
-  async turn(text: string, source: TurnSource) {
-    if (this.busy) {
-      this.queue.push([text, source]);
+  turn(text: string, source: TurnSource): Promise<void> {
+    const run = this.chain.then(() => this.runTurn(text, source));
+    this.chain = run.catch(() => undefined);
+    return run;
+  }
+
+  private async runTurn(text: string, source: TurnSource) {
+    if (!this.client) {
+      this.showReply('This device is not connected to the MCP server. Start it with npm run dev, then reload.');
       return;
     }
-    if (!this.client) return this.showReply('Not connected to the MCP server.');
     this.busy = true;
-    this.el.classList.add('is-thinking');
+    this.setState('thinking', true);
     try {
       const now = await this.now();
       if (this.history.length === 0) this.history.push({ role: 'system', content: this.systemPrompt(now) });
       else this.history[0] = { role: 'system', content: this.systemPrompt(now) };
 
-      if (source === 'user') {
-        this.showSaid(text);
+      if (source === 'user' || source === 'card') {
+        this.showSaid(source === 'card' ? `Tapped: ${text}` : text);
         this.addBubble('user', text);
-        this.history.push({ role: 'user', content: text });
-      } else if (source === 'card') {
-        this.showSaid(`(tapped) ${text}`);
-        this.addBubble('user', text);
-        this.history.push({ role: 'user', content: text });
       } else {
         // A notification: nobody spoke, so don't leave the last utterance captioned above it.
         this.showSaid('');
-        this.history.push({ role: 'user', content: text });
       }
+      this.history.push({ role: 'user', content: text });
       this.showReply('');
 
       let toolCallsThisTurn = 0;
@@ -227,9 +304,11 @@ export class Device {
             });
             continue;
           }
+          this.setState('thinking', false);
           this.showReply(reply);
           this.addBubble('assistant', reply);
-          await speak(reply);
+          await speak(reply, () => this.setState('speaking', true));
+          this.setState('speaking', false);
           break;
         }
         for (const call of calls) {
@@ -240,7 +319,7 @@ export class Device {
           } catch {
             /* leave empty */
           }
-          this.addToolChip(tool?.title ?? call.function.name);
+          this.showWorking(tool?.title ?? call.function.name);
           let result: CallToolResult;
           try {
             // Generous timeout: a tool may be waiting on the person to answer a confirmation.
@@ -259,15 +338,16 @@ export class Device {
       // People hear this, so say something human; the details stay in the console.
       const message = /quota|rate limit|busy|429|503|exceeded|timeout/i.test(raw)
         ? "Sorry, I'm a little busy right now. Please ask me again in a moment."
-        : "Sorry, something went wrong on my side. Please try that again.";
+        : 'Sorry, something went wrong on my side. Please try that again.';
+      this.setState('thinking', false);
       this.showReply(message);
       this.addBubble('assistant', message);
-      void speak(message);
+      await speak(message, () => this.setState('speaking', true));
+      this.setState('speaking', false);
     } finally {
       this.busy = false;
-      this.el.classList.remove('is-thinking');
-      const next = this.queue.shift();
-      if (next) void this.turn(...next);
+      this.setState('thinking', false);
+      this.setState('speaking', false);
     }
   }
 
@@ -276,12 +356,16 @@ export class Device {
   private async showCard(tool: Tool, args: Record<string, unknown>, result: CallToolResult) {
     let container: HTMLElement;
     if (this.cfg.variant === 'display') {
-      container = this.$('.stage');
+      container = document.createElement('div');
+      container.className = 'card-slot';
+      const stage = this.$('.stage');
+      stage.replaceChildren(container);
+      stage.scrollTop = 0;
+      clearInterval(this.hintTimer);
     } else {
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble card';
-      this.$('.feed').appendChild(bubble);
-      container = bubble;
+      container = document.createElement('div');
+      container.className = 'bubble card';
+      this.$('.feed').appendChild(container);
     }
     await this.card?.dispose();
     this.card = await mountCard({
@@ -290,7 +374,7 @@ export class Device {
       args,
       result,
       container,
-      theme: 'light',
+      theme: this.cfg.variant === 'display' ? 'dark' : 'light',
       onMessage: (text) => void this.turn(text, 'card'),
     }).catch((err) => {
       console.warn('card failed', err);
@@ -302,40 +386,45 @@ export class Device {
   // ------------------------------------------------------------------ elicitation
 
   private elicit(params: { message: string; requestedSchema?: any; mode?: string }): Promise<{ action: 'accept' | 'decline' | 'cancel'; content?: ElicitContent }> {
-    const box = this.$('.elicit');
+    const sheet = this.$('.sheet');
     const props = Object.entries<any>(params.requestedSchema?.properties ?? {});
     const booleanOnly = props.length === 1 && props[0][1].type === 'boolean';
     chime();
+    this.setState('thinking', false);
     this.showReply(params.message);
-    void speak(params.message);
+    void speak(params.message, () => this.setState('speaking', true)).then(() => this.setState('speaking', false));
 
     return new Promise((resolve) => {
       const finish = (answer: { action: 'accept' | 'decline' | 'cancel'; content?: ElicitContent }) => {
         this.elicitation = null;
-        box.classList.add('hidden');
-        box.innerHTML = '';
+        sheet.classList.remove('open');
+        setTimeout(() => {
+          sheet.hidden = true;
+          sheet.innerHTML = '';
+        }, 260);
+        this.setState('thinking', true);
         resolve(answer);
       };
       this.elicitation = { resolve: finish, booleanField: booleanOnly ? props[0][0] : undefined };
 
       if (booleanOnly) {
         const field = props[0];
-        box.innerHTML = `
-          <div class="elicit-card">
-            <div class="elicit-kicker">Confirm</div>
-            <div class="elicit-msg">${escapeHtml(params.message)}</div>
-            ${field[1].description ? `<div class="elicit-detail">${escapeHtml(field[1].description)}</div>` : ''}
-            <div class="elicit-actions"><button class="yes">Yes</button><button class="no secondary">No</button></div>
-            <div class="elicit-hint">Say “yes” or “no”</div>
+        sheet.innerHTML = `
+          <div class="sheet-card" role="dialog" aria-label="Confirm">
+            <p class="sheet-title">${escapeHtml(params.message)}</p>
+            <div class="sheet-actions">
+              <button class="btn btn-buy yes" type="button">Yes, go ahead</button>
+              <button class="btn btn-quiet no" type="button">No</button>
+            </div>
+            <p class="sheet-hint">${icon('mic', 14)} Or say “yes” or “no”</p>
           </div>`;
-        box.querySelector('.yes')!.addEventListener('click', () => finish({ action: 'accept', content: { [field[0]]: true } }));
-        box.querySelector('.no')!.addEventListener('click', () => finish({ action: 'decline' }));
+        sheet.querySelector('.yes')!.addEventListener('click', () => finish({ action: 'accept', content: { [field[0]]: true } }));
+        sheet.querySelector('.no')!.addEventListener('click', () => finish({ action: 'decline' }));
       } else {
         // Generic form rendering for any flat elicitation schema.
-        box.innerHTML = `
-          <form class="elicit-card">
-            <div class="elicit-kicker">${escapeHtml(this.cfg.owner)}, a quick question</div>
-            <div class="elicit-msg">${escapeHtml(params.message)}</div>
+        sheet.innerHTML = `
+          <form class="sheet-card" role="dialog" aria-label="${escapeHtml(params.message)}">
+            <p class="sheet-title">${escapeHtml(params.message)}</p>
             ${props
               .map(([name, p]) => {
                 const label = escapeHtml(p.title ?? name);
@@ -344,9 +433,9 @@ export class Device {
                 return `<label>${label}<input name="${name}" type="${p.type === 'number' || p.type === 'integer' ? 'number' : 'text'}"/></label>`;
               })
               .join('')}
-            <div class="elicit-actions"><button type="submit">Submit</button><button type="button" class="no secondary">Cancel</button></div>
+            <div class="sheet-actions"><button class="btn btn-buy" type="submit">Send answer</button><button type="button" class="btn btn-quiet no">Cancel</button></div>
           </form>`;
-        const form = box.querySelector('form')!;
+        const form = sheet.querySelector('form')!;
         form.addEventListener('submit', (e) => {
           e.preventDefault();
           const content: ElicitContent = {};
@@ -356,9 +445,11 @@ export class Device {
           }
           finish({ action: 'accept', content });
         });
-        box.querySelector('.no')!.addEventListener('click', () => finish({ action: 'cancel' }));
+        sheet.querySelector('.no')!.addEventListener('click', () => finish({ action: 'cancel' }));
       }
-      box.classList.remove('hidden');
+      sheet.hidden = false;
+      requestAnimationFrame(() => sheet.classList.add('open'));
+      (sheet.querySelector('.yes, input, select') as HTMLElement | null)?.focus({ preventScroll: true });
     });
   }
 
@@ -369,21 +460,21 @@ export class Device {
    */
   private answerElicitation(text: string) {
     const pending = this.elicitation!;
-    const words = text.trim().split(/\s+/).length;
-    const clear = words <= 5;
-    if (pending.booleanField && clear && NO.test(text)) {
+    const clear = text.trim().split(/\s+/).length <= 5;
+    const echo = () => {
       this.showSaid(text);
       this.addBubble('user', text);
+    };
+    if (pending.booleanField && clear && NO.test(text)) {
+      echo();
       return pending.resolve({ action: 'decline' });
     }
     if (pending.booleanField && clear && YES.test(text)) {
-      this.showSaid(text);
-      this.addBubble('user', text);
+      echo();
       return pending.resolve({ action: 'accept', content: { [pending.booleanField]: true } });
     }
     if (!pending.booleanField && clear && NO.test(text)) {
-      this.showSaid(text);
-      this.addBubble('user', text);
+      echo();
       return pending.resolve({ action: 'cancel' });
     }
     pending.resolve({ action: 'cancel' });
@@ -413,6 +504,11 @@ export class Device {
     fresh.forEach((i) => this.seen.add(i.id));
     const urgent = fresh.some((i) => i.severity === 'urgent');
     chime(urgent);
+    this.el.classList.remove('is-alert', 'is-urgent');
+    void this.el.offsetWidth;
+    this.el.classList.add('is-alert');
+    if (urgent) this.el.classList.add('is-urgent');
+    setTimeout(() => this.el.classList.remove('is-alert', 'is-urgent'), 6000);
     for (const item of fresh) this.toast(item.title, item.detail, item.severity ?? 'info');
     const lines = fresh.map((i) => `- (${i.kind ?? 'notice'}, ${i.severity ?? 'info'}) ${i.title}: ${i.detail}`).join('\n');
     void this.turn(
@@ -426,7 +522,7 @@ export class Device {
   private toast(title: string, detail: string, severity: string) {
     const t = document.createElement('div');
     t.className = `toast ${severity}`;
-    t.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span>`;
+    t.innerHTML = `<span class="toast-icon">${icon(severity === 'urgent' ? 'alert' : 'bell', 18)}</span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span></div>`;
     this.$('.toasts').appendChild(t);
     setTimeout(() => t.classList.add('gone'), 9000);
     setTimeout(() => t.remove(), 9600);
@@ -435,13 +531,16 @@ export class Device {
   // ------------------------------------------------------------------ rendering helpers
 
   private showSaid(text: string) {
-    this.$('.said').textContent = text;
+    const said = this.el.querySelector('.said');
+    if (said) said.textContent = text;
   }
 
   private captionTimer: ReturnType<typeof setTimeout> | undefined;
 
   private showReply(text: string) {
-    this.$('.reply').textContent = text;
+    const reply = this.el.querySelector('.reply');
+    if (!reply) return;
+    reply.textContent = text;
     // On the display the caption overlays the card; let it fade once it has been heard.
     const caption = this.$('.caption');
     caption.classList.remove('faded');
@@ -449,43 +548,44 @@ export class Device {
     if (text) this.captionTimer = setTimeout(() => !this.busy && caption.classList.add('faded'), 14_000);
   }
 
-  private addBubble(who: 'user' | 'assistant', text: string) {
-    if (!text) return;
-    const b = document.createElement('div');
-    b.className = `bubble ${who}`;
-    b.textContent = text;
-    this.$('.feed').appendChild(b);
+  private showWorking(name: string) {
+    const reply = this.el.querySelector('.reply');
+    if (reply) reply.innerHTML = `<span class="working">${escapeHtml(name)}</span>`;
+    const chip = document.createElement('p');
+    chip.className = 'tool-chip';
+    chip.innerHTML = `${icon('bolt', 13)} ${escapeHtml(name)}`;
+    this.el.querySelector('.feed')?.appendChild(chip);
     this.scrollFeed();
   }
 
-  private addToolChip(name: string) {
-    const c = document.createElement('div');
-    c.className = 'tool-chip';
-    c.textContent = name;
-    this.$('.feed').appendChild(c);
-    const live = document.createElement('span');
-    live.className = 'tool-live';
-    live.textContent = name;
-    const caption = this.$('.reply');
-    caption.replaceChildren(live);
+  private addBubble(who: 'user' | 'assistant', text: string) {
+    const feed = this.el.querySelector('.feed');
+    if (!text || !feed) return;
+    feed.querySelector('.feed-empty')?.remove();
+    const b = document.createElement('p');
+    b.className = `bubble ${who}`;
+    b.textContent = text;
+    feed.appendChild(b);
     this.scrollFeed();
   }
 
   private scrollFeed() {
-    const f = this.$('.feed');
-    f.scrollTop = f.scrollHeight;
+    const f = this.el.querySelector<HTMLElement>('.feed');
+    if (f) f.scrollTo({ top: f.scrollHeight, behavior: 'smooth' });
   }
 
   clearConversation() {
     this.history = [];
-    this.$('.feed').innerHTML = '';
-    this.showSaid('');
-    this.showReply('');
     void this.card?.dispose();
     this.card = null;
+    this.showSaid('');
+    this.showReply('');
+    const feed = this.el.querySelector('.feed');
+    if (feed) feed.innerHTML = `<p class="feed-empty">${escapeHtml(this.cfg.idleTitle ?? 'Ask a question')}</p>`;
     if (this.cfg.variant === 'display') {
-      this.$('.stage').innerHTML = `<div class="idle"><div class="idle-time"></div><div class="idle-date"></div><div class="idle-title">${escapeHtml(this.cfg.idleTitle ?? '')}</div></div>`;
+      this.$('.stage').innerHTML = this.idleMarkup();
       this.tickClock(new Date());
+      this.rotateHints();
     }
   }
 }
